@@ -11,8 +11,8 @@ namespace TelegramBot
         public Player LastChancellor { get; set; }
 
         public Counter ElectionCounter { get; set; } = new ElectionCounter();
-        public Counter LiberalLawsCounter { get; set; } = new LiberalLawsCounter();
-        public Counter FascistLawsCounter { get; set; } = new FascistLawsCounter();
+        public Counter LiberalLawsCounter { get; set; } = new LawsCounter();
+        public Counter FascistLawsCounter { get; set; } = new LawsCounter();
         // TODO write logic
     }
 }

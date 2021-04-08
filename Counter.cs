@@ -12,7 +12,7 @@ namespace TelegramBot
     {       
         public override bool Inc()
         {
-            if (++_cur == Strategy.MaxElections)
+            if (++_cur == 3)
             {
                 return true;
             }
@@ -21,17 +21,14 @@ namespace TelegramBot
 
         public void Clear()
             => _cur = 0;
-    }
 
-    public class FascistLawsCounter : Counter
-    {
-        public override bool Inc()
+        public override string ToString()
         {
-            return ++_cur != 0;
+            return (_cur + 1).ToString();
         }
     }
-    
-    public class LiberalLawsCounter : Counter
+
+    public class LawsCounter : Counter
     {
         public override bool Inc()
         {

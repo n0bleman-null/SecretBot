@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -5,21 +6,29 @@ namespace TelegramBot
 {
     public abstract class Strategy
     {
-        public static uint MaxElections { get; } = 3;
-        public static List<Role> Roles { get; }
-        public static bool HitlerVision { get; }
-        public IAbility[] FascistAbilities { get; }
-        public IAbility[] LiberalAbilities { get; }
+        public static Random Randomizer { get; } = new Random();
+
+        public List<Person> GetRoles(int players) => Enumerable
+            .Repeat(Person.Liberal, players - Persons.Length)
+            .Concat(Persons)
+            .OrderBy(a => Randomizer.Next())
+            .ToList();
+
+        public IAbility GetFascistAbility(Counter counter)
+            => FascistAbilities[counter.Cur];
+
+        public IAbility GetLiberalAbility(Counter counter)
+            => LiberalAbilities[counter.Cur];
+
+        public bool HitlerVision { get; }
+        private IAbility[] FascistAbilities { get; }
+        private IAbility[] LiberalAbilities { get; }
+        private Person[] Persons { get; }
     }
 
     public class LowStrategy : Strategy // for 5-6 players
     {
-        public readonly List<Role> Roles = new List<Role>()
-        {
-            Role.Fascist, Role.Fascist
-        };
-
-        public readonly IAbility[] FascistAbilities = new IAbility[]
+        private static readonly IAbility[] FascistAbilities = new[]
         {
             new Nothing(),
             new Nothing(),
@@ -29,17 +38,22 @@ namespace TelegramBot
             new Nothing()
         };
 
-        public readonly IAbility[] LiberalAbilities = new IAbility[]
+        private static readonly IAbility[] LiberalAbilities = new[]
         {
             new Nothing(),
             new Nothing(),
             new Nothing(),
             new Nothing(),
-            new Nothing()
+            new Nothing(),
         };
-        
-        public readonly bool HitlerVision = true;
+
+        private static readonly Person[] Persons = new[]
+        {
+            Person.Hitler,
+            Person.Fascist
+        };
+
+        private new static readonly bool HitlerVision = true;
     }
-    
-    
+
 }

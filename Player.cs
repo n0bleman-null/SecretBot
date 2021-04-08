@@ -15,8 +15,6 @@ namespace TelegramBot
         Hitler
     }
 
-
-
     public class Player
     {
         public Player(User user)

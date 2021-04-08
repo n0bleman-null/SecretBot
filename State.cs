@@ -60,16 +60,18 @@ namespace TelegramBot
             // start voting
             if (most)
             {
-                Game.State = new DrawCardsState(Game);
                 // check Hitler
                 bool isHitler = false;
                 int fashlaws = 0; // take fashist law count
                 if (isHitler && fashlaws >= 3)
-                    Game.State = new EndGameState(Game);
-                // show winners
+                    Game.State = new FascistWinState(Game);
+                // next
+                Game.State = new DrawCardsState(Game);
+
             }
             else
             {
+                //TODO Add CHAOS STATE
                 // election counter inc
                 // if election counter == 3 go CHAOS
                 // else =>
@@ -101,14 +103,7 @@ namespace TelegramBot
         {
             // draw 3 cards
             // president discard one
-            
-            // offer veto for chancellor
-            bool offer = false;
-            // offer = board.fashistlaws == 5
-            if (offer)
-                Game.State = new OfferVetoState(Game);
-            else
-                Game.State = new ChooseCardState(Game);
+            Game.State = new ChooseCardState(Game);
         }
     }
     
@@ -119,53 +114,27 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            // offer veto to cancellor
+            bool veto = false;
+            if (veto)
+            {
+                // offer to president
+                bool agree = true;
+
+                if (agree)
+                {
+                    // discard all cards
+                    Game.State = new PresidentElectionState(Game);
+                    // don't increase ellection counter
+                }
+                else
+                {
+                    Game.State = new ChooseCardState(Game);
+                }
+            }
            // take 2 cards
            // chancellor choose one
            Game.State = new AcceptLawState(Game);
-        }
-    }
-    
-    class OfferVetoState : State
-    {
-        public OfferVetoState(Game game) : base(game)
-        { }
-
-        public override async Task Step()
-        {
-            // offer to chancellor
-            bool agree = true;
-
-            if (agree)
-            {
-                Game.State = new VetoState(Game);
-            }
-            else
-            {
-                Game.State = new ChooseCardState(Game);
-            }
-        }
-    }
-    
-    class VetoState : State
-    {
-        public VetoState(Game game) : base(game)
-        { }
-
-        public override async Task Step()
-        {
-            // offer to president
-            bool agree = true;
-
-            if (agree)
-            {
-                // discard all cards
-                Game.State = new PresidentElectionState(Game);
-            }
-            else
-            {
-                Game.State = new ChooseCardState(Game);
-            }
-
         }
     }
 
@@ -176,38 +145,27 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // check count of laws, maybe somebody win
-            // go EndGameState
-            
-                        
-            // get current law, accept it
-            bool hasAbility = false;
-            // take ability
-            if (hasAbility)
-                Game.State = new UseAbilityState(Game);
-            else
-                Game.State = new PresidentElectionState(Game);
+
+            Game.State = new PresidentElectionState(Game);
+            // ellecton counter = 0
         }
     }
-    
-    class UseAbilityState : State
+
+    class FascistWinState : State
     {
-        public UseAbilityState(Game game) : base(game)
+        public FascistWinState(Game game) : base(game)
         { }
 
         public override async Task Step()
         {
-            // use ability
-            Game.State = new PresidentElectionState(Game);
-            
-            // if kill MUST check Hitler here
-            // go EndGameState
+            // inform about game results
+            // delete 
         }
     }
     
-    class EndGameState : State
+    class LiberalWinState : State
     {
-        public EndGameState(Game game) : base(game)
+        public LiberalWinState(Game game) : base(game)
         { }
 
         public override async Task Step()
