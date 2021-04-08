@@ -23,6 +23,7 @@ namespace TelegramBot
                 "/leave" => LeaveGameCommandAsync(message),
                 "/begin" => BeginGameCommandAsync(message),
                 "/stop" => StopGameCommandAsync(message),
+                "/test" => StopGameCommandAsync(message),
                 _ => Usage(message)
             };
             await action;
@@ -178,6 +179,12 @@ namespace TelegramBot
                 chatId: player.Id,
                 text: $"Exit game in chat {message.Chat.Title}"
             );
+        }
+        
+        static async Task TestCommandAsync(Message message)
+        {
+            Player player = new Player(message.From);
+            player.SendMessageAsync("df");
         }
 
 

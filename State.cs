@@ -1,4 +1,6 @@
+using System.Linq;
 using System.Threading.Tasks;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
@@ -22,6 +24,17 @@ namespace TelegramBot
         {
             // if president == null => ellect president
             // else go next president
+            foreach (var (player,person) in Enumerable.Zip(Game.Players, Game.Strategy.GetRoles(Game.Players.Count)))
+            {
+                player.Person = person;
+                player.Role = person switch
+                {
+                    Person.Fascist => Role.Fascist,
+                    Person.Hitler => Role.Fascist,
+                    Person.Liberal => Role.Liberal
+                };
+            }
+            Game.Board.President = Game.Players[Strategy.Randomizer.Next(Game.Players.Count)];
             Game.State = new PresidentElectionState(Game);
         }
     }
@@ -33,7 +46,9 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // president ellect chancellor
+            Game.Board.LastPresident = Game.Board.President;
+            Game.Board.LastChancellor = Game.Board.Chancellor;
+            Game.Board.President = Game.Players[Game.Players.IndexOf(Game.Board.LastPresident)];
             Game.State = new ChancellorElectionState(Game);
         }
     }
@@ -44,7 +59,7 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // current president ellect chancellor
+            // current president elect chancellor
             Game.State = new VotingState(Game);
         }
     }
@@ -101,6 +116,7 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            
             // draw 3 cards
             // president discard one
             Game.State = new ChooseCardState(Game);
@@ -147,7 +163,7 @@ namespace TelegramBot
         {
 
             Game.State = new PresidentElectionState(Game);
-            // ellecton counter = 0
+            // election counter = 0
         }
     }
 

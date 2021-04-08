@@ -5,10 +5,10 @@ namespace TelegramBot
 {
     public class Board
     {
-        public Player President { get; set; }
-        public Player LastPresident { get; set; }
-        public Player Chancellor { get; set; }
-        public Player LastChancellor { get; set; }
+        public Player President { get; set; } = null;
+        public Player LastPresident { get; set; } = null;
+        public Player Chancellor { get; set; } = null;
+        public Player LastChancellor { get; set; } = null;
 
         public Counter ElectionCounter { get; set; } = new ElectionCounter();
         public Counter LiberalLawsCounter { get; set; } = new LawsCounter();

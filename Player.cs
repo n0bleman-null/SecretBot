@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
@@ -21,13 +23,20 @@ namespace TelegramBot
         {
             User = user;
         }
-        
         public User User { get; set; }
-        public bool IsDead { get; set; } = false;
+        public bool IsAlive { get; set; } = true;
         public bool MaybeHitler { get; set; } = true;
         public Role Role { get; set; }
         public Person Person { get; set; }
-        
+
+        public async Task SendMessageAsync(string message)
+        {
+            await Bot.Instance.SendTextMessageAsync(
+                    chatId: User.Id,
+                    text: message);
+        }
+
+
         // TODO send private message method
     }
 }
