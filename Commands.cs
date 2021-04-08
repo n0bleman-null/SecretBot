@@ -190,6 +190,7 @@ namespace TelegramBot
 
         static async Task Usage(Message message)
         {
+            //
             if (message.Chat.Type == ChatType.Private)
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat.Id,
