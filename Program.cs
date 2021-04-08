@@ -39,6 +39,7 @@ namespace TelegramBot
         static async Task Main(string[] args)
         {
             Bot.Instance.OnMessage += BotOnMessageReceived;
+            Bot.Instance.OnCallbackQuery += BotOnCallbackQueryReceived;
             
             Bot.Instance.StartReceiving();
             Console.WriteLine("Press any key to exit");
@@ -56,6 +57,26 @@ namespace TelegramBot
             {
                 await Commands.ExecuteCommand(message);
             }
+        }
+        
+        private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
+        {
+            var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            await Bot.Instance.EditMessageTextAsync(
+                callbackQuery.Message.Chat.Id,
+                callbackQuery.Message.MessageId,
+                $"Спасибо, вы проголосовали за {callbackQuery.Data}",
+                replyMarkup: null);
+            Console.WriteLine(callbackQuery.Data);
+            // await Bot.Instance.AnswerCallbackQueryAsync(
+            //     callbackQueryId: callbackQuery.Id,
+            //     text: $"Received {callbackQuery.Data}"
+            // );
+
+            // await Bot.Instance.SendTextMessageAsync(
+            //     chatId: callbackQuery.Message.Chat.Id,
+            //     text: $"Received {callbackQuery.Data}"
+            // );
         }
     }
 }

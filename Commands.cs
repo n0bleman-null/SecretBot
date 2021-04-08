@@ -23,16 +23,19 @@ namespace TelegramBot
                 "/leave" => LeaveGameCommandAsync(message),
                 "/begin" => BeginGameCommandAsync(message),
                 "/stop" => StopGameCommandAsync(message),
-                "/test" => StopGameCommandAsync(message),
+                "/test" => TestCommandAsync(message),
                 _ => Usage(message)
             };
             await action;
         }
 
         // TODO make implementations
-        private static Task StopGameCommandAsync(Message message)
+        private static async Task StopGameCommandAsync(Message message)
         {
-            throw new NotImplementedException();
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: message.Chat.Id,
+                text: "Stoped"
+            ); 
         }
 
         private static Task BeginGameCommandAsync(Message message)
@@ -183,8 +186,7 @@ namespace TelegramBot
         
         static async Task TestCommandAsync(Message message)
         {
-            Player player = new Player(message.From);
-            player.SendMessageAsync("df");
+
         }
 
 

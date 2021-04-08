@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
+using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
@@ -44,7 +45,22 @@ namespace TelegramBot
             // checks...
             State.Step();
         }
-        
+        public async Task SendVote()
+        {
+            var replyKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:"),
+                    InlineKeyboardButton.WithCallbackData("Nein")
+                }
+            );
+            foreach (var player in Players)
+            {
+                await Bot.Instance.SendTextMessageAsync(
+                chatId: player.User.Id,
+                text: "Голосуйте",
+                replyMarkup: replyKeyboardMarkup);
+            }
+        }
         
 
         // TODO send to chat method
