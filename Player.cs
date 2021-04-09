@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.ReplyMarkups;
@@ -17,6 +18,13 @@ namespace TelegramBot
         Hitler
     }
 
+    public enum Vote
+    {
+        Ya,
+        Nein,
+        Undef
+    }
+
     public class Player
     {
         public Player(User user)
@@ -28,6 +36,7 @@ namespace TelegramBot
         public bool MaybeHitler { get; set; } = true;
         public Role Role { get; set; }
         public Person Person { get; set; }
+        public Vote VoteResult { get; set; } = Vote.Undef;
 
         public async Task SendMessageAsync(string message)
         {
@@ -35,8 +44,6 @@ namespace TelegramBot
                     chatId: User.Id,
                     text: message);
         }
-
-
-        // TODO send private message method
+        
     }
 }

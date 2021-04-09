@@ -16,6 +16,11 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
+    public enum CallbackType
+    {
+        Vote,
+        Choice
+    }
     public sealed class Bot // Singleton
     {
         private static readonly Lazy<TelegramBotClient> Lazy =
@@ -62,21 +67,28 @@ namespace TelegramBot
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
             var callbackQuery = callbackQueryEventArgs.CallbackQuery;
+            var callback = callbackQuery.Data.Split(':');
+            var chatId = long.Parse(callback[0]);
+            var callbackType = (CallbackType) Enum.Parse(typeof(CallbackType), callback[1]);
+            var callbackAnswer = callback[2];
+            switch (callbackType)
+            {
+                case CallbackType.Vote:
+                    Games.Instance[chatId].Players.First(
+                            player => player.User.Id == callbackQuery.From.Id).VoteResult =
+                            (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    Games.Instance[chatId].CheckVotes();
+                    break;
+                case CallbackType.Choice:
+                    Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
+                    break;
+            }
             await Bot.Instance.EditMessageTextAsync(
                 callbackQuery.Message.Chat.Id,
                 callbackQuery.Message.MessageId,
-                $"Спасибо, вы проголосовали за {callbackQuery.Data}",
+                $"Спасибо, вы проголосовали за {callbackAnswer}",
                 replyMarkup: null);
-            Console.WriteLine(callbackQuery.Data);
-            // await Bot.Instance.AnswerCallbackQueryAsync(
-            //     callbackQueryId: callbackQuery.Id,
-            //     text: $"Received {callbackQuery.Data}"
-            // );
-
-            // await Bot.Instance.SendTextMessageAsync(
-            //     chatId: callbackQuery.Message.Chat.Id,
-            //     text: $"Received {callbackQuery.Data}"
-            // );
+            // Console.WriteLine(callbackQuery.Data);
         }
     }
 }

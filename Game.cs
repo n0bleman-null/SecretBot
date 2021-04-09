@@ -26,7 +26,8 @@ namespace TelegramBot
         public bool IsStarted { get; set; } = false;
         public Board Board { get; } = new Board();
         public Strategy Strategy { get; private set; }
-        
+        public long? CandidateForActionId { get; set; } = null;
+        public Vote LastVoteResult { get; set; } = Vote.Undef;
         
         public void Subscribe(User user) 
         {
@@ -45,15 +46,27 @@ namespace TelegramBot
             // checks...
             State.Step();
         }
-        public async Task SendVote()
+
+        public void CheckVotes()
+        {
+            if (Players.Any(player => player.VoteResult == Vote.Undef))
+                return;
+            if (Players.Count(player => player.VoteResult == Vote.Ya) > Players.Count / 2)
+                LastVoteResult = Vote.Ya;
+            else
+                LastVoteResult = Vote.Nein;
+            Players.ForEach(player => player.VoteResult = Vote.Undef);
+            SendToChatAsync($"Результаты голосования {LastVoteResult}");
+        }
+        public async Task SendVoteAsync()
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:"),
-                    InlineKeyboardButton.WithCallbackData("Nein")
+                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:Vote:Ya"),
+                    InlineKeyboardButton.WithCallbackData("Nein", $"{ChatId}:Vote:Nein")
                 }
             );
-            foreach (var player in Players)
+            foreach (var player in Players.Where(player => player.IsAlive))
             {
                 await Bot.Instance.SendTextMessageAsync(
                 chatId: player.User.Id,
@@ -61,9 +74,28 @@ namespace TelegramBot
                 replyMarkup: replyKeyboardMarkup);
             }
         }
-        
+        public async Task SendChoiceAsync(Player voting)
+        {
+            var replyKeyboardMarkup = new InlineKeyboardMarkup(
+                Players.Select(player
+                    => InlineKeyboardButton.WithCallbackData(
+                        string.Join(" ", player.User.FirstName, player.User.LastName),
+                        $"{ChatId}:Choice:{player.User.Id}"))
+            );
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: voting.User.Id,
+                text: "Выберите",
+                replyMarkup: replyKeyboardMarkup);
 
-        // TODO send to chat method
+        }
+
+        public async Task SendToChatAsync(string message)
+        {
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: ChatId,
+                text: message);
+        }
+        
     }
 
 
