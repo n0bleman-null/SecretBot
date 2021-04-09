@@ -1,10 +1,11 @@
+using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
-    // TODO REMAKE WITH SCHEME
+    
     public abstract class State // TODO state machine facade is ready, after realizing Game.Board make implementations 
     {
         protected Game Game;
@@ -22,8 +23,6 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // if president == null => ellect president
-            // else go next president
             foreach (var (player,person) in Enumerable.Zip(Game.Players, Game.Strategy.GetRoles(Game.Players.Count)))
             {
                 player.Person = person;
@@ -34,7 +33,9 @@ namespace TelegramBot
                     Person.Liberal => Role.Liberal
                 };
             }
-            Game.Board.President = Game.Players[Strategy.Randomizer.Next(Game.Players.Count)];
+
+            Game.Players = Game.Players.OrderBy(a => Strategy.Randomizer.Next()).ToList();
+            Game.Board.President = Game.Players.Last();
             Game.State = new PresidentElectionState(Game);
         }
     }
@@ -48,7 +49,12 @@ namespace TelegramBot
         {
             Game.Board.LastPresident = Game.Board.President;
             Game.Board.LastChancellor = Game.Board.Chancellor;
-            Game.Board.President = Game.Players[Game.Players.IndexOf(Game.Board.LastPresident)];
+            Game.Board.Chancellor = null;
+            do
+            {
+                Game.Board.President =
+                    Game.Players[(Game.Players.IndexOf(Game.Board.LastPresident) + 1) % Game.Players.Count];
+            } while (!Game.Board.President.IsAlive);
             Game.State = new ChancellorElectionState(Game);
         }
     }
@@ -59,7 +65,13 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // current president elect chancellor
+            var except = Game.Players.Where(player => !player.IsAlive || player == Game.Board.President).ToList();
+            if (!except.Contains(Game.Board.President))
+                except.Add(Game.Board.LastPresident);
+            if (Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
+                except.Add(Game.Board.LastChancellor);
+            await Game.SendChoiceAsync(Game.Board.President, except);
+            Game.Board.Chancellor = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
             Game.State = new VotingState(Game);
         }
     }
@@ -71,26 +83,24 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            bool most = true;
-            // start voting
-            if (most)
+            await Game.SendVoteAsync();
+            switch (Game.LastVoteResult)
             {
-                // check Hitler
-                bool isHitler = false;
-                int fashlaws = 0; // take fashist law count
-                if (isHitler && fashlaws >= 3)
-                    Game.State = new FascistWinState(Game);
-                // next
-                Game.State = new DrawCardsState(Game);
-
-            }
-            else
-            {
-                //TODO Add CHAOS STATE
-                // election counter inc
-                // if election counter == 3 go CHAOS
-                // else =>
-                Game.State = new PresidentElectionState(Game);
+                case Vote.Ya:
+                    if (Game.Board.FascistLawsCounter.Cur >= 3 && Game.Board.Chancellor.Person == Person.Hitler)
+                        Game.State = new FascistWinState(Game);
+                    else
+                        Game.State = new DrawCardsState(Game);
+                    break;
+                case Vote.Nein:
+                    if (Game.Board.ElectionCounter.Inc())
+                        Game.State = new ChaosState(Game);
+                    else
+                        Game.State = new PresidentElectionState(Game);
+                    break;
+                case Vote.Undef:
+                    throw new Exception("Голосование не завершилось???");
+                    break;
             }
         }
     }

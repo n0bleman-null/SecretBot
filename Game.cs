@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace TelegramBot
             Strategy = new LowStrategy();
         }
 
-        public List<Player> Players => _players;
+        public List<Player> Players { get; set; }
         public long ChatId => _chatId;
         public State State { get; set; }
         public bool IsStarted { get; set; } = false;
@@ -74,10 +75,10 @@ namespace TelegramBot
                 replyMarkup: replyKeyboardMarkup);
             }
         }
-        public async Task SendChoiceAsync(Player voting)
+        public async Task SendChoiceAsync(Player voting, List<Player> except = null)
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(
-                Players.Select(player
+                Players.Except(except ?? Enumerable.Empty<Player>()).Select(player
                     => InlineKeyboardButton.WithCallbackData(
                         string.Join(" ", player.User.FirstName, player.User.LastName),
                         $"{ChatId}:Choice:{player.User.Id}"))

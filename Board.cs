@@ -13,6 +13,6 @@ namespace TelegramBot
         public Counter ElectionCounter { get; set; } = new ElectionCounter();
         public Counter LiberalLawsCounter { get; set; } = new LawsCounter();
         public Counter FascistLawsCounter { get; set; } = new LawsCounter();
-        // TODO write logic
+        // TODO realize DECK
     }
 }

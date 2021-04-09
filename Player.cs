@@ -44,6 +44,15 @@ namespace TelegramBot
                     chatId: User.Id,
                     text: message);
         }
-        
+
+        public override bool Equals(object? obj)
+        {
+            return User.Id.Equals(((Player)obj).User.Id);
+        }
+
+        public override int GetHashCode()
+        {
+            return User.Id.GetHashCode();
+        }
     }
 }

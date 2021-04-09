@@ -186,7 +186,7 @@ namespace TelegramBot
         
         static async Task TestCommandAsync(Message message)
         {
-            await Games.Instance[message.Chat.Id].SendVoteAsync();
+            await Games.Instance[message.Chat.Id].SendChoiceAsync(Games.Instance[message.Chat.Id].Players.First());
         }
 
 
