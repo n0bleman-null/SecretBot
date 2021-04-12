@@ -19,7 +19,10 @@ namespace TelegramBot
     public enum CallbackType
     {
         Vote,
-        Choice
+        SingleVote,
+        Choice,
+        DiscardLaw,
+        ChooseLaw
     }
     public sealed class Bot // Singleton
     {
@@ -79,8 +82,17 @@ namespace TelegramBot
                             (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
                     Games.Instance[chatId].CheckVotes();
                     break;
+                case CallbackType.SingleVote:
+                    Games.Instance[chatId].LastVoteResult = (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
+                    break;
+                case CallbackType.DiscardLaw:
+                    Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer));
+                    break;
+                case CallbackType.ChooseLaw:
+                    Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer) == 0 ? 1 : 0);
                     break;
             }
             await Bot.Instance.EditMessageTextAsync(

@@ -24,7 +24,7 @@ namespace TelegramBot
 
         public override string ToString()
         {
-            return (_cur + 1).ToString();
+            return _cur.ToString();
         }
     }
 

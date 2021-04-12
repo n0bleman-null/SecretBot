@@ -10,9 +10,9 @@ namespace TelegramBot
         public Player Chancellor { get; set; } = null;
         public Player LastChancellor { get; set; } = null;
 
-        public Counter ElectionCounter { get; set; } = new ElectionCounter();
-        public Counter LiberalLawsCounter { get; set; } = new LawsCounter();
-        public Counter FascistLawsCounter { get; set; } = new LawsCounter();
+        public ElectionCounter ElectionCounter { get; set; } = new ElectionCounter();
+        public LawsCounter LiberalLawsCounter { get; set; } = new LawsCounter();
+        public LawsCounter FascistLawsCounter { get; set; } = new LawsCounter();
 
         public Deck Deck { get; set; } = new Deck();
         // TODO realize DECK

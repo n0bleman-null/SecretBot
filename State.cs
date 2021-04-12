@@ -112,8 +112,7 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // take card
-            // go accept law
+            Game.DraftedLaws = Game.Board.Deck.GetLaw();
             Game.State = new AcceptLawState(Game);
         }
     }
@@ -126,7 +125,8 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            
+            Game.DraftedLaws = Game.Board.Deck.GetLaws();
+            await Game.SendPresidentDiscardLawAsync(Game.DraftedLaws);
             // draw 3 cards
             // president discard one
             Game.State = new ChooseCardState(Game);
@@ -141,26 +141,22 @@ namespace TelegramBot
         public override async Task Step()
         {
             // offer veto to cancellor
-            bool veto = false;
-            if (veto)
+            await Game.SendVetoRequestAsync(Game.Board.Chancellor);
+            if (Game.LastVoteResult == Vote.Ya)
             {
-                // offer to president
-                bool agree = true;
-
-                if (agree)
+                Game.LastVoteResult = Vote.Undef;
+                await Game.SendVetoRequestAsync(Game.Board.President);
+                if (Game.LastVoteResult == Vote.Ya)
                 {
-                    // discard all cards
+                    Game.DraftedLaws = null;
                     Game.State = new PresidentElectionState(Game);
-                    // don't increase ellection counter
-                }
-                else
-                {
-                    Game.State = new ChooseCardState(Game);
+                    Game.State.Step();
                 }
             }
-           // take 2 cards
-           // chancellor choose one
-           Game.State = new AcceptLawState(Game);
+            Game.LastVoteResult = Vote.Undef;
+
+            await Game.SendChancellorChooseLawAsync(Game.DraftedLaws);
+            Game.State = new AcceptLawState(Game);
         }
     }
 
@@ -171,9 +167,22 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            var accepted = Game.DraftedLaws.First();
+            IAbility ability;
+            switch (accepted)
+            {
+                case Law.Fascist:
+                    Game.Board.FascistLawsCounter.Inc();
+                    ability = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
+                    break;
+                case Law.Liberal:
+                    Game.Board.LiberalLawsCounter.Inc();
+                    ability = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
+                    break;
+            }            
+            Game.Board.ElectionCounter.Clear();
 
             Game.State = new PresidentElectionState(Game);
-            // election counter = 0
         }
     }
 

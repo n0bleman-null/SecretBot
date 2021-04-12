@@ -23,7 +23,6 @@ namespace TelegramBot
                     Laws = Laws.Concat(Discarded.OrderBy(law => Strategy.Randomizer.Next())).ToList();
                     Discarded.Clear();
                 }
-
                 _count = value;
             }
         }
@@ -42,13 +41,13 @@ namespace TelegramBot
             return l.ToList();
         }
 
-        public Law GetLaw()
+        public List<Law> GetLaw()
         {
-            var l = Laws.First();
-            Discarded.Add(l);
+            var l = Laws.Take(1);
+            Discarded.AddRange(l);
             Count--;
             Laws.RemoveAt(0);
-            return l;
+            return l.ToList();
         }
     }
 }

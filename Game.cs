@@ -27,8 +27,11 @@ namespace TelegramBot
         public bool IsStarted { get; set; } = false;
         public Board Board { get; } = new Board();
         public Strategy Strategy { get; private set; }
+        // for callbacks
         public long? CandidateForActionId { get; set; } = null;
         public Vote LastVoteResult { get; set; } = Vote.Undef;
+        public List<Law> DraftedLaws { get; set; } = null;
+        //
         
         public void Subscribe(User user) 
         {
@@ -87,7 +90,44 @@ namespace TelegramBot
                 chatId: voting.User.Id,
                 text: "Выберите",
                 replyMarkup: replyKeyboardMarkup);
+        }
 
+        public async Task SendPresidentDiscardLawAsync(List<Law> laws)
+        {
+            var replyKeyboardMarkup = new InlineKeyboardMarkup(laws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
+                law.ToString(),
+                $"{ChatId}::{index}"
+                )));
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: Board.President.User.Id,
+                text: "Выберите закон, который хотите скинуть",
+                replyMarkup: replyKeyboardMarkup);
+        }
+        
+        public async Task SendChancellorChooseLawAsync(List<Law> laws)
+        {
+            var replyKeyboardMarkup = new InlineKeyboardMarkup(laws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
+                law.ToString(),
+                $"{ChatId}::{index}"
+            )));
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: Board.President.User.Id,
+                text: "Выберите закон, который хотите принять",
+                replyMarkup: replyKeyboardMarkup);
+        }
+
+        public async Task SendVetoRequestAsync(Player player)
+        {
+            var replyKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]
+                {
+                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:Vote:Ya"),
+                    InlineKeyboardButton.WithCallbackData("Nein", $"{ChatId}:Vote:Nein")
+                }
+            );
+            await Bot.Instance.SendTextMessageAsync(
+                    chatId: player.User.Id,
+                    text: "Воспользоваться правом вето?",
+                    replyMarkup: replyKeyboardMarkup);
         }
 
         public async Task SendToChatAsync(string message)
