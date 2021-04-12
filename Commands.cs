@@ -38,9 +38,14 @@ namespace TelegramBot
             ); 
         }
 
-        private static Task BeginGameCommandAsync(Message message)
+        private static async Task BeginGameCommandAsync(Message message)
         {
-            throw new NotImplementedException();
+            await Bot.Instance.SendTextMessageAsync(
+                chatId: message.Chat.Id,
+                text: "Game STARTED"
+            ); 
+        
+            await Games.Instance[message.Chat.Id].State.Step();
         }
 
         static async Task StartCommandAsync(Message message)

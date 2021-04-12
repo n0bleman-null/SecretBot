@@ -37,6 +37,7 @@ namespace TelegramBot
             Game.Players = Game.Players.OrderBy(a => Strategy.Randomizer.Next()).ToList();
             Game.Board.President = Game.Players.Last();
             Game.State = new PresidentElectionState(Game);
+            Game.State.Step();
         }
     }
     
@@ -56,6 +57,7 @@ namespace TelegramBot
                     Game.Players[(Game.Players.IndexOf(Game.Board.LastPresident) + 1) % Game.Players.Count];
             } while (!Game.Board.President.IsAlive);
             Game.State = new ChancellorElectionState(Game);
+            Game.State.Step();
         }
     }
     class ChancellorElectionState : State
@@ -73,6 +75,7 @@ namespace TelegramBot
             await Game.SendChoiceAsync(Game.Board.President, except);
             Game.Board.Chancellor = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
             Game.State = new VotingState(Game);
+            Game.State.Step();
         }
     }
     
@@ -102,6 +105,7 @@ namespace TelegramBot
                     throw new Exception("Голосование не завершилось???");
                     break;
             }
+            Game.State.Step();
         }
     }
     
@@ -114,6 +118,7 @@ namespace TelegramBot
         {
             Game.DraftedLaws = Game.Board.Deck.GetLaw();
             Game.State = new AcceptLawState(Game);
+            Game.State.Step();
         }
     }
 
@@ -127,9 +132,8 @@ namespace TelegramBot
         {
             Game.DraftedLaws = Game.Board.Deck.GetLaws();
             await Game.SendPresidentDiscardLawAsync(Game.DraftedLaws);
-            // draw 3 cards
-            // president discard one
             Game.State = new ChooseCardState(Game);
+            Game.State.Step();
         }
     }
     
@@ -140,7 +144,6 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            // offer veto to cancellor
             await Game.SendVetoRequestAsync(Game.Board.Chancellor);
             if (Game.LastVoteResult == Vote.Ya)
             {
@@ -157,6 +160,7 @@ namespace TelegramBot
 
             await Game.SendChancellorChooseLawAsync(Game.DraftedLaws);
             Game.State = new AcceptLawState(Game);
+            Game.State.Step();
         }
     }
 
@@ -183,6 +187,7 @@ namespace TelegramBot
             Game.Board.ElectionCounter.Clear();
 
             Game.State = new PresidentElectionState(Game);
+            Game.State.Step();
         }
     }
 

@@ -10,7 +10,6 @@ namespace TelegramBot
 {
     public class Game
     {
-        private List<Player> _players = new List<Player>();
         private long _chatId;
 
         public Game(long chat)
@@ -21,7 +20,7 @@ namespace TelegramBot
             Strategy = new LowStrategy();
         }
 
-        public List<Player> Players { get; set; }
+        public List<Player> Players { get; set; } = new List<Player>();
         public long ChatId => _chatId;
         public State State { get; set; }
         public bool IsStarted { get; set; } = false;
@@ -61,6 +60,7 @@ namespace TelegramBot
                 LastVoteResult = Vote.Nein;
             Players.ForEach(player => player.VoteResult = Vote.Undef);
             SendToChatAsync($"Результаты голосования {LastVoteResult}");
+            State.Step();
         }
         public async Task SendVoteAsync()
         {
@@ -96,7 +96,7 @@ namespace TelegramBot
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(laws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
                 law.ToString(),
-                $"{ChatId}::{index}"
+                $"{ChatId}:DiscardLaw:{index}"
                 )));
             await Bot.Instance.SendTextMessageAsync(
                 chatId: Board.President.User.Id,
@@ -108,7 +108,7 @@ namespace TelegramBot
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(laws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
                 law.ToString(),
-                $"{ChatId}::{index}"
+                $"{ChatId}:ChooseLaw:{index}"
             )));
             await Bot.Instance.SendTextMessageAsync(
                 chatId: Board.President.User.Id,
