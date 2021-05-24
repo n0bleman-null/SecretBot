@@ -10,7 +10,7 @@ namespace TelegramBot
 {
     public class Game
     {
-        private long _chatId;
+        private long _chatId; // TODO make auto property
 
         public Game(long chat)
         {
@@ -86,10 +86,11 @@ namespace TelegramBot
                         string.Join(" ", player.User.FirstName, player.User.LastName),
                         $"{ChatId}:Choice:{player.User.Id}"))
             );
-            await Bot.Instance.SendTextMessageAsync(
+            var mes = await Bot.Instance.SendTextMessageAsync(
                 chatId: voting.User.Id,
                 text: "Выберите",
                 replyMarkup: replyKeyboardMarkup);
+            
         }
 
         public async Task SendPresidentDiscardLawAsync(List<Law> laws)

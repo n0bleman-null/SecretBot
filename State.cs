@@ -2,7 +2,6 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using Telegram.Bot.Types.ReplyMarkups;
-
 namespace TelegramBot
 {
     
@@ -36,6 +35,8 @@ namespace TelegramBot
 
             Game.Players = Game.Players.OrderBy(a => Strategy.Randomizer.Next()).ToList();
             Game.Board.President = Game.Players.Last();
+            Console.WriteLine($"[{DateTime.Now}] Game started");
+            Game.Players.ForEach(player => player.SendMessageAsync($"{player.Role}\n{player.Person}"));
             Game.State = new PresidentElectionState(Game);
             Game.State.Step();
         }
@@ -56,6 +57,7 @@ namespace TelegramBot
                 Game.Board.President =
                     Game.Players[(Game.Players.IndexOf(Game.Board.LastPresident) + 1) % Game.Players.Count];
             } while (!Game.Board.President.IsAlive);
+            Console.WriteLine($"[{DateTime.Now}] PresidentElectionState, new president is {Game.Board.President.User.Username}");
             Game.State = new ChancellorElectionState(Game);
             Game.State.Step();
         }
@@ -67,13 +69,15 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            Console.WriteLine($"[{DateTime.Now}] ChancellorElectionState begin");
             var except = Game.Players.Where(player => !player.IsAlive || player == Game.Board.President).ToList();
-            if (!except.Contains(Game.Board.President))
+            if (Game.Board.LastPresident is not null && !except.Contains(Game.Board.President))
                 except.Add(Game.Board.LastPresident);
-            if (Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
+            if (Game.Board.LastChancellor is not null && Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
                 except.Add(Game.Board.LastChancellor);
             await Game.SendChoiceAsync(Game.Board.President, except);
             Game.Board.Chancellor = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
+            Console.WriteLine($"[{DateTime.Now}] ChancellorElectionState, new chancellor is {Game.Board.Chancellor.User.Username}");
             Game.State = new VotingState(Game);
             Game.State.Step();
         }
