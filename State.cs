@@ -123,7 +123,7 @@ namespace TelegramBot
             Game.SendToChatAsync($"Результаты голосования {Game.LastVoteResult}");
             if (Game.LastVoteResult is Vote.Ya)
             {
-                Game.Board.ElectionCounter.Clear();
+                Game.Board.ElectionCounter.Clear(); // move to law confirmed
                 Game.State = new DrawingCardsState(Game);
             }
             else if (Game.Board.ElectionCounter.Inc())
@@ -143,7 +143,9 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            
+            Game.DraftedLaws = Game.Board.Deck.GetLaw();
+            Game.State = new ConfirmingLawState(Game);
+            Game.State.Step();
         }
     }
     
@@ -193,8 +195,16 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            Console.WriteLine($"[{DateTime.Now}] After choosing - {Game.DraftedLaws.Count} card: {string.Join(" ", Game.DraftedLaws)}");
-            // Game.State = new Pres(Game);
+            Console.WriteLine($"[{DateTime.Now}] Confirmed law: {string.Join(" ", Game.DraftedLaws)}");
+            switch (Game.DraftedLaws.First())
+            {
+                case Law.Fascist:
+                    break;
+                    Game.Board.FascistLawsCounter.Inc();
+                case Law.Liberal:
+                    Game.Board.LiberalLawsCounter.Inc();
+                    break;
+            }
         }
     }
 }
