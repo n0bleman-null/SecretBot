@@ -14,6 +14,7 @@ namespace TelegramBot
         {
             if (++_cur == 3)
             {
+                Clear();
                 return true;
             }
             return false;

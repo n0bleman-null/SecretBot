@@ -58,13 +58,13 @@ namespace TelegramBot
                     Game.Players[(Game.Players.IndexOf(Game.Board.LastPresident) + 1) % Game.Players.Count];
             } while (!Game.Board.President.IsAlive);
             Console.WriteLine($"[{DateTime.Now}] PresidentElectionState, new president is {Game.Board.President.User.Username}");
-            Game.State = new ChancellorElectionState(Game);
+            Game.State = new ChancellorElectionStartState(Game);
             Game.State.Step();
         }
     }
-    class ChancellorElectionState : State
+    class ChancellorElectionStartState : State
     {
-        public ChancellorElectionState(Game game) : base(game)
+        public ChancellorElectionStartState(Game game) : base(game)
         { }
 
         public override async Task Step()
@@ -76,10 +76,37 @@ namespace TelegramBot
             if (Game.Board.LastChancellor is not null && Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
                 except.Add(Game.Board.LastChancellor);
             await Game.SendChoiceAsync(Game.Board.President, except);
+            Game.State = new ChancellorElectedState(Game);
+        }
+    }
+    
+    class ChancellorElectedState : State
+    {
+        public ChancellorElectedState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            if (!Game.CandidateForActionId.HasValue)
+                throw new Exception("Errors in ellection");
             Game.Board.Chancellor = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
+            Game.CandidateForActionId = null;
             Console.WriteLine($"[{DateTime.Now}] ChancellorElectionState, new chancellor is {Game.Board.Chancellor.User.Username}");
-            Game.State = new VotingState(Game);
+            Game.State = new VotingStartState(Game);
             Game.State.Step();
+        }
+    }
+    
+    class VotingStartState : State
+    {
+        public VotingStartState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            await Game.SendVoteAsync();
+            Console.WriteLine($"[{DateTime.Now}] VotingnState");
+            Game.State = new VotingState(Game);
         }
     }
     
@@ -90,25 +117,21 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            await Game.SendVoteAsync();
-            switch (Game.LastVoteResult)
+            if (Game.LastVoteResult is Vote.Undef)
+                throw new Exception("Undef after voting???");
+            Console.WriteLine($"[{DateTime.Now}] VotingnState result is {Game.LastVoteResult}");
+            Game.SendToChatAsync($"Результаты голосования {Game.LastVoteResult}");
+            if (Game.LastVoteResult is Vote.Ya)
             {
-                case Vote.Ya:
-                    if (Game.Board.FascistLawsCounter.Cur >= 3 && Game.Board.Chancellor.Person == Person.Hitler)
-                        Game.State = new FascistWinState(Game);
-                    else
-                        Game.State = new DrawCardsState(Game);
-                    break;
-                case Vote.Nein:
-                    if (Game.Board.ElectionCounter.Inc())
-                        Game.State = new ChaosState(Game);
-                    else
-                        Game.State = new PresidentElectionState(Game);
-                    break;
-                case Vote.Undef:
-                    throw new Exception("Голосование не завершилось???");
-                    break;
+                Game.Board.ElectionCounter.Clear();
+                Game.State = new DrawingCardsState(Game);
             }
+            else if (Game.Board.ElectionCounter.Inc())
+                Game.State = new ChaosState(Game);
+            else            
+                Game.State = new PresidentElectionState(Game);
+
+            Game.LastVoteResult = Vote.Undef;
             Game.State.Step();
         }
     }
@@ -120,102 +143,58 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            Game.DraftedLaws = Game.Board.Deck.GetLaw();
-            Game.State = new AcceptLawState(Game);
-            Game.State.Step();
+            
         }
     }
-
     
-    class DrawCardsState : State
+    class DrawingCardsState : State
     {
-        public DrawCardsState(Game game) : base(game)
+        public DrawingCardsState(Game game) : base(game)
         { }
 
         public override async Task Step()
         {
             Game.DraftedLaws = Game.Board.Deck.GetLaws();
-            await Game.SendPresidentDiscardLawAsync(Game.DraftedLaws);
-            Game.State = new ChooseCardState(Game);
+            Console.WriteLine($"[{DateTime.Now}] Drafted {Game.DraftedLaws.Count} cards: {string.Join(" ", Game.DraftedLaws)}");
+            Game.State = new PresidentDiscardingState(Game);
             Game.State.Step();
         }
     }
     
-    class ChooseCardState : State
+    class PresidentDiscardingState : State
     {
-        public ChooseCardState(Game game) : base(game)
+        public PresidentDiscardingState(Game game) : base(game)
         { }
 
         public override async Task Step()
         {
-            await Game.SendVetoRequestAsync(Game.Board.Chancellor);
-            if (Game.LastVoteResult == Vote.Ya)
-            {
-                Game.LastVoteResult = Vote.Undef;
-                await Game.SendVetoRequestAsync(Game.Board.President);
-                if (Game.LastVoteResult == Vote.Ya)
-                {
-                    Game.DraftedLaws = null;
-                    Game.State = new PresidentElectionState(Game);
-                    Game.State.Step();
-                }
-            }
-            Game.LastVoteResult = Vote.Undef;
-
-            await Game.SendChancellorChooseLawAsync(Game.DraftedLaws);
-            Game.State = new AcceptLawState(Game);
-            Game.State.Step();
+            await Game.SendPresidentDiscardLawAsync();
+            Game.State = new ChancellorChoosingState(Game);
         }
     }
 
-    class AcceptLawState : State
+    class ChancellorChoosingState : State
     {
-        public AcceptLawState(Game game) : base(game)
+        public ChancellorChoosingState(Game game) : base(game)
         { }
 
         public override async Task Step()
         {
-            var accepted = Game.DraftedLaws.First();
-            IAbility ability;
-            switch (accepted)
-            {
-                case Law.Fascist:
-                    Game.Board.FascistLawsCounter.Inc();
-                    ability = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
-                    break;
-                case Law.Liberal:
-                    Game.Board.LiberalLawsCounter.Inc();
-                    ability = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
-                    break;
-            }            
-            Game.Board.ElectionCounter.Clear();
-
-            Game.State = new PresidentElectionState(Game);
-            Game.State.Step();
-        }
-    }
-
-    class FascistWinState : State
-    {
-        public FascistWinState(Game game) : base(game)
-        { }
-
-        public override async Task Step()
-        {
-            // inform about game results
-            // delete 
+            Console.WriteLine($"[{DateTime.Now}] After discarding - {Game.DraftedLaws.Count} cards: {string.Join(" ", Game.DraftedLaws)}");
+            await Game.SendChancellorChooseLawAsync();
+            Game.State = new ConfirmingLawState(Game);
         }
     }
     
-    class LiberalWinState : State
+    class ConfirmingLawState : State
     {
-        public LiberalWinState(Game game) : base(game)
+        public ConfirmingLawState(Game game) : base(game)
         { }
 
         public override async Task Step()
         {
-            // inform about game results
-            // delete 
+            Console.WriteLine($"[{DateTime.Now}] After choosing - {Game.DraftedLaws.Count} card: {string.Join(" ", Game.DraftedLaws)}");
+            // Game.State = new Pres(Game);
         }
     }
 }

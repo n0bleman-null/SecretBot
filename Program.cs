@@ -80,19 +80,20 @@ namespace TelegramBot
                     Games.Instance[chatId].Players.First(
                             player => player.User.Id == callbackQuery.From.Id).VoteResult =
                             (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
-                    Games.Instance[chatId].CheckVotes();
-                    break;
-                case CallbackType.SingleVote:
-                    Games.Instance[chatId].LastVoteResult = (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    if (Games.Instance[chatId].AllVote())
+                        Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
+                    await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.DiscardLaw:
                     Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer));
+                    await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.ChooseLaw:
-                    Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer) == 0 ? 1 : 0);
+                    Games.Instance[chatId].DraftedLaws.RemoveAt((int.Parse(callbackAnswer) + 1) % 2);
+                    await Games.Instance[chatId].State.Step();
                     break;
             }
             await Bot.Instance.EditMessageTextAsync(
