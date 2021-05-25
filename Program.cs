@@ -81,7 +81,11 @@ namespace TelegramBot
                             player => player.User.Id == callbackQuery.From.Id).VoteResult =
                             (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
                     if (Games.Instance[chatId].AllVote())
-                        Games.Instance[chatId].State.Step();
+                        await Games.Instance[chatId].State.Step();
+                    break;
+                case CallbackType.SingleVote:
+                    Games.Instance[chatId].LastVoteResult = (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);

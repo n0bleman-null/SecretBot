@@ -38,7 +38,7 @@ namespace TelegramBot
             Console.WriteLine($"[{DateTime.Now}] Game started");
             Game.Players.ForEach(player => player.SendMessageAsync($"{player.Role}\n{player.Person}"));
             Game.State = new PresidentElectionState(Game);
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     
@@ -59,7 +59,7 @@ namespace TelegramBot
             } while (!Game.Board.President.IsAlive);
             Console.WriteLine($"[{DateTime.Now}] PresidentElectionState, new president is {Game.Board.President.User.Username}");
             Game.State = new ChancellorElectionStartState(Game);
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     class ChancellorElectionStartState : State
@@ -93,7 +93,7 @@ namespace TelegramBot
             Game.CandidateForActionId = null;
             Console.WriteLine($"[{DateTime.Now}] ChancellorElectionState, new chancellor is {Game.Board.Chancellor.User.Username}");
             Game.State = new VotingStartState(Game);
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     
@@ -105,7 +105,7 @@ namespace TelegramBot
         public override async Task Step()
         {
             await Game.SendVoteAsync();
-            Console.WriteLine($"[{DateTime.Now}] VotingnState");
+            Console.WriteLine($"[{DateTime.Now}] VotingState begin");
             Game.State = new VotingState(Game);
         }
     }
@@ -117,22 +117,26 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            if (Game.LastVoteResult is Vote.Undef)
-                throw new Exception("Undef after voting???");
-            Console.WriteLine($"[{DateTime.Now}] VotingnState result is {Game.LastVoteResult}");
+            Console.WriteLine($"[{DateTime.Now}] VotingState result is {Game.LastVoteResult}");
             Game.SendToChatAsync($"Результаты голосования {Game.LastVoteResult}");
-            if (Game.LastVoteResult is Vote.Ya)
+            switch (Game.LastVoteResult)
             {
-                Game.Board.ElectionCounter.Clear(); // move to law confirmed
-                Game.State = new DrawingCardsState(Game);
+                case Vote.Ya:
+                    Game.Board.ElectionCounter.Clear(); // move to law confirmed
+                    Game.State = new DrawingCardsState(Game);
+                    break;
+                case Vote.Nein:
+                    if (Game.Board.ElectionCounter.Inc())
+                        Game.State = new ChaosState(Game);
+                    else            
+                        Game.State = new PresidentElectionState(Game);
+                    break;
+                case Vote.Undef:
+                    throw new Exception("Undef after voting???");
+                    break;
             }
-            else if (Game.Board.ElectionCounter.Inc())
-                Game.State = new ChaosState(Game);
-            else            
-                Game.State = new PresidentElectionState(Game);
-
             Game.LastVoteResult = Vote.Undef;
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     
@@ -143,9 +147,10 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            Console.WriteLine($"[{DateTime.Now}] ChaosState");
             Game.DraftedLaws = Game.Board.Deck.GetLaw();
             Game.State = new ConfirmingLawState(Game);
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     
@@ -159,7 +164,7 @@ namespace TelegramBot
             Game.DraftedLaws = Game.Board.Deck.GetLaws();
             Console.WriteLine($"[{DateTime.Now}] Drafted {Game.DraftedLaws.Count} cards: {string.Join(" ", Game.DraftedLaws)}");
             Game.State = new PresidentDiscardingState(Game);
-            Game.State.Step();
+            await Game.State.Step();
         }
     }
     
@@ -170,8 +175,12 @@ namespace TelegramBot
 
         public override async Task Step()
         {
+            Console.WriteLine($"[{DateTime.Now}] ChaosState");
             await Game.SendPresidentDiscardLawAsync();
-            Game.State = new ChancellorChoosingState(Game);
+            if (Game.Board.FascistLawsCounter.Cur >= 5)
+                Game.State = new ChancellorVetoOfferState(Game);
+            else 
+                Game.State = new ChancellorChoosingState(Game);
         }
     }
 
@@ -188,6 +197,72 @@ namespace TelegramBot
         }
     }
     
+    class ChancellorVetoOfferState : State
+    {
+        public ChancellorVetoOfferState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            Console.WriteLine($"[{DateTime.Now}] ChancellorVetoOfferState");
+            await Game.SendVetoRequestAsync(Game.Board.Chancellor);
+            Game.State = new PresidentVetoOfferState(Game);
+        }
+    }
+    
+    class PresidentVetoOfferState : State
+    {
+        public PresidentVetoOfferState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            Console.WriteLine($"[{DateTime.Now}] PresidentVetoOfferState");
+            switch (Game.LastVoteResult)
+            {
+                case Vote.Ya:
+                    Game.LastVoteResult = Vote.Undef;
+                    await Game.SendVetoRequestAsync(Game.Board.President);
+                    Game.State = new PresidentVetoOfferState(Game);
+                    break;
+                case Vote.Nein:
+                    Game.LastVoteResult = Vote.Undef;
+                    Game.State = new ChancellorChoosingState(Game);
+                    await Game.State.Step();
+                    break;
+                case Vote.Undef:
+                    throw new Exception("Error in chancellor veto offer");
+                    break;
+            }
+        }
+    }
+    
+    class VetoState : State
+    {
+        public VetoState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            Console.WriteLine($"[{DateTime.Now}] VetoState");
+            switch (Game.LastVoteResult)
+            {
+                case Vote.Ya:
+                    Game.State = new PresidentElectionState(Game);
+                    await Game.State.Step();
+                    break;
+                case Vote.Nein:
+                    Game.State = new ChancellorChoosingState(Game);
+                    await Game.State.Step();
+                    break;
+                case Vote.Undef:
+                    throw new Exception("Error in chancellor veto offer");
+                    break;
+            }
+            Game.LastVoteResult = Vote.Undef;
+        }
+    }
+    
     class ConfirmingLawState : State
     {
         public ConfirmingLawState(Game game) : base(game)
@@ -199,8 +274,9 @@ namespace TelegramBot
             switch (Game.DraftedLaws.First())
             {
                 case Law.Fascist:
-                    break;
                     Game.Board.FascistLawsCounter.Inc();
+                    // Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
+                    break;
                 case Law.Liberal:
                     Game.Board.LiberalLawsCounter.Inc();
                     break;

@@ -120,8 +120,8 @@ namespace TelegramBot
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]
                 {
-                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:Vote:Ya"),
-                    InlineKeyboardButton.WithCallbackData("Nein", $"{ChatId}:Vote:Nein")
+                    InlineKeyboardButton.WithCallbackData("Ya",$"{ChatId}:SingleVote:Ya"),
+                    InlineKeyboardButton.WithCallbackData("Nein", $"{ChatId}:SingleVote:Nein")
                 }
             );
             await Bot.Instance.SendTextMessageAsync(
