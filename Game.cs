@@ -32,13 +32,18 @@ namespace TelegramBot
         public State State { get; set; }
         public bool IsStarted => GameStatus != GameStatus.Preparing;
         public GameStatus GameStatus { get; set; }= GameStatus.Preparing;
+        
         public Board Board { get; } = new Board();
         public Strategy Strategy { get; private set; }
         // for callbacks
         public long? CandidateForActionId { get; set; } = null;
         public Vote LastVoteResult { get; set; } = Vote.Undef;
         public List<Law> DraftedLaws { get; set; } = null;
-        //
+        // for early election
+        public bool EarlyElection { get; set; } = false;
+        public Player EarlyElectedPresident { get; set; } = null;
+        
+        
         
         public void Subscribe(User user) 
         {

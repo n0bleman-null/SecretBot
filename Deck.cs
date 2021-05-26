@@ -23,10 +23,11 @@ namespace TelegramBot
                     Laws = Laws.Concat(Discarded.OrderBy(law => Strategy.Randomizer.Next())).ToList();
                     Discarded.Clear();
                 }
-                _count = value;
+                else 
+                    _count = value;
             }
         }
-        private List<Law> Laws { get; set; } =
+        public List<Law> Laws { get; private set; } =
             Enumerable.Repeat(Law.Fascist, 11).Concat(Enumerable.Repeat(Law.Liberal, 6))
                 .OrderBy(law => Strategy.Randomizer.Next()).ToList();
 
@@ -37,9 +38,12 @@ namespace TelegramBot
             var l = Laws.Take(3);
             Count -= 3;
             Discarded.AddRange(l);
-            Laws.RemoveRange(0,3);
+            Laws = Laws.Skip(3).ToList();
             return l.ToList();
         }
+
+        public List<Law> ShowLaws() // 3 Laws
+            => Laws.Take(3).ToList();
 
         public List<Law> GetLaw()
         {

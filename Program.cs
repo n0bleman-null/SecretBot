@@ -69,6 +69,8 @@ namespace TelegramBot
         
         private static async void BotOnCallbackQueryReceived(object sender, CallbackQueryEventArgs callbackQueryEventArgs)
         {
+            if (Games.Instance.Count == 0)
+                return;
             var callbackQuery = callbackQueryEventArgs.CallbackQuery;
             var callback = callbackQuery.Data.Split(':');
             var chatId = long.Parse(callback[0]);
@@ -89,7 +91,7 @@ namespace TelegramBot
                     break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
-                    await Games.Instance[chatId].State?.Step();
+                    await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.DiscardLaw:
                     Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer));

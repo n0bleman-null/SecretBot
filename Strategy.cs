@@ -22,18 +22,18 @@ namespace TelegramBot
             .ToList();
 
         public override IAbility GetFascistAbility(Counter counter)
-            => FascistAbilities[counter.Cur];
+            => FascistAbilities[counter.Cur - 1];
         public override IAbility GetLiberalAbility(Counter counter)
-            => LiberalAbilities[counter.Cur];
+            => LiberalAbilities[counter.Cur - 1];
 
         private static bool HitlerVision { get; } = true;
         
         private static readonly IAbility[] FascistAbilities = new IAbility[]
         {
+            new EarlyElections(),
             new CheckRole(),
+            new ShowLaws(),
             new CheckRole(),
-            new CheckRole(),
-            new Nothing(),
             new Nothing(),
             new Nothing()
         };

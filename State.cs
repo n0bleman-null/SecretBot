@@ -41,6 +41,7 @@ namespace TelegramBot
             Game.Players.ForEach(player => player.SendMessageAsync($"{player.Role}\n{player.Person}"));
             Game.State = new PresidentElectionState(Game);
             await Game.State.Step();
+            Console.WriteLine($"[{DateTime.Now}] Laws in deck: {string.Join("->", Game.Board.Deck.Laws)}");
         }
     }
     
@@ -51,7 +52,14 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            Game.Board.LastPresident = Game.Board.President;
+            if (Game.EarlyElection)
+            {
+                Game.EarlyElection = false;
+                Game.Board.LastPresident = Game.EarlyElectedPresident;
+                Game.EarlyElectedPresident = null;
+            }
+            else
+                Game.Board.LastPresident = Game.Board.President;
             Game.Board.LastChancellor = Game.Board.Chancellor;
             Game.Board.Chancellor = null;
             do
@@ -125,9 +133,7 @@ namespace TelegramBot
                     Game.Board.ElectionCounter.Clear(); // move to law confirmed
                     if (Game.Board.FascistLawsCounter.Cur > 2 && Game.Board.Chancellor.Person is Person.Hitler)
                     {
-                        Game.GameStatus = GameStatus.FascistWin;
-                        Game.State = new EndGameState(Game);
-                        await Game.State.Step();
+                        await new FascistWin().Execute(Game);
                         return;
                     }
                     Game.State = new DrawingCardsState(Game);
@@ -156,7 +162,29 @@ namespace TelegramBot
         {
             Console.WriteLine($"[{DateTime.Now}] ChaosState");
             Game.DraftedLaws = Game.Board.Deck.GetLaw();
-            Game.State = new ConfirmingLawState(Game);
+            
+            Console.WriteLine($"[{DateTime.Now}] Confirmed law: {string.Join(" ", Game.DraftedLaws)}");
+            switch (Game.DraftedLaws.First())
+            {
+                case Law.Fascist:
+                    Game.Board.FascistLawsCounter.Inc();
+                    if (Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter) is FascistWin)
+                    {
+                        await Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter).Execute(Game);
+                        return;
+                    }
+                    break;
+                case Law.Liberal:
+                    Game.Board.LiberalLawsCounter.Inc();
+                    if (Game.Strategy.GetLiberalAbility(Game.Board.FascistLawsCounter) is LiberalWin)
+                    {
+                        await Game.Strategy.GetLiberalAbility(Game.Board.FascistLawsCounter).Execute(Game);
+                        return;
+                    }
+                    break;
+            }
+            Console.WriteLine($"[{DateTime.Now}] Facsist counter - {Game.Board.FascistLawsCounter.Cur} | Liberal counter - {Game.Board.LiberalLawsCounter.Cur}");
+            Game.State = new PresidentElectionState(Game);
             await Game.State.Step();
         }
     }
@@ -282,18 +310,74 @@ namespace TelegramBot
                 case Law.Fascist:
                     Game.Board.FascistLawsCounter.Inc();
                     var fascistAbility = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
-                    Game.State = new EndGameState(Game);//
-                    // await fascistAbility.Execute(Game);
+                    await fascistAbility.Execute(Game);
                     break;
                 case Law.Liberal:
                     Game.Board.LiberalLawsCounter.Inc();
                     var liberalAbility = Game.Strategy.GetLiberalAbility(Game.Board.LiberalLawsCounter);
-                    Game.State = new EndGameState(Game);//
-                    // await liberalAbility.Execute(Game);
+                    await liberalAbility.Execute(Game);
                     break;
             }
             Console.WriteLine($"[{DateTime.Now}] Facsist counter - {Game.Board.FascistLawsCounter.Cur} | Liberal counter - {Game.Board.LiberalLawsCounter.Cur}");
+        }
+    }
+    
+    class RoleCheckAbilityState : State
+    {
+        public RoleCheckAbilityState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            if (!Game.CandidateForActionId.HasValue)
+                throw new Exception("Errors in role check id");
+            await Game.Board.President.SendMessageAsync($"His role is {Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value).Role}");
+            Game.CandidateForActionId = null;
             Game.State = new PresidentElectionState(Game);
+            await Game.State.Step();
+        }
+    }
+    
+    class EarlyElectionState : State
+    {
+        public EarlyElectionState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            if (!Game.CandidateForActionId.HasValue)
+                throw new Exception("Errors in early election id");
+            var pl = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
+            Game.CandidateForActionId = null;
+
+            Game.Board.President = pl;
+            Game.State = new ChancellorElectionStartState(Game);
+            await Game.State.Step();
+        }
+    }
+    
+    class KillAbilityState : State
+    {
+        public KillAbilityState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            if (!Game.CandidateForActionId.HasValue)
+                throw new Exception("Errors in kill id");
+            var pl = Game.Players.First(player => player.User.Id == Game.CandidateForActionId.Value);
+            Game.CandidateForActionId = null;
+            pl.IsAlive = false;
+            if (pl.Person is Person.Hitler)
+            {
+                await new LiberalWin().Execute(Game);
+                return;
+            }
+            else
+                Game.State = new PresidentElectionState(Game);
+
+            Console.WriteLine($"[{DateTime.Now}] Kill confirmed");
+            await Game.State.Step();
         }
     }
     
@@ -305,6 +389,8 @@ namespace TelegramBot
         public override async Task Step()
         {
             Console.WriteLine($"[{DateTime.Now}] Endgame, game status is {Game.GameStatus}");
+            // TODO delete game from dictionary
+            // TODO test kill ability with many players
         }
     }
 }
