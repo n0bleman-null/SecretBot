@@ -8,6 +8,13 @@ using Telegram.Bot.Types.ReplyMarkups;
 
 namespace TelegramBot
 {
+    public enum GameStatus
+    {
+        Preparing,
+        Started,
+        FascistWin,
+        LiberalWin
+    }
     public class Game
     {
         private long _chatId; // TODO make auto property
@@ -23,7 +30,8 @@ namespace TelegramBot
         public List<Player> Players { get; set; } = new List<Player>();
         public long ChatId => _chatId;
         public State State { get; set; }
-        public bool IsStarted { get; set; } = false;
+        public bool IsStarted => GameStatus != GameStatus.Preparing;
+        public GameStatus GameStatus { get; set; }= GameStatus.Preparing;
         public Board Board { get; } = new Board();
         public Strategy Strategy { get; private set; }
         // for callbacks
@@ -91,7 +99,6 @@ namespace TelegramBot
                 replyMarkup: replyKeyboardMarkup);
             
         }
-
         public async Task SendPresidentDiscardLawAsync()
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(DraftedLaws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
@@ -103,7 +110,6 @@ namespace TelegramBot
                 text: "Выберите закон, который хотите скинуть",
                 replyMarkup: replyKeyboardMarkup);
         }
-        
         public async Task SendChancellorChooseLawAsync()
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(DraftedLaws.Select((law,index) => InlineKeyboardButton.WithCallbackData(

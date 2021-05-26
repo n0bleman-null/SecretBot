@@ -32,7 +32,9 @@ namespace TelegramBot
                     Person.Liberal => Role.Liberal
                 };
             }
-
+            // delete
+            // Game.Board.FascistLawsCounter._setCur(5);
+            //
             Game.Players = Game.Players.OrderBy(a => Strategy.Randomizer.Next()).ToList();
             Game.Board.President = Game.Players.Last();
             Console.WriteLine($"[{DateTime.Now}] Game started");
@@ -70,11 +72,9 @@ namespace TelegramBot
         public override async Task Step()
         {
             Console.WriteLine($"[{DateTime.Now}] ChancellorElectionState begin");
-            var except = Game.Players.Where(player => !player.IsAlive || player == Game.Board.President).ToList();
-            if (Game.Board.LastPresident is not null && !except.Contains(Game.Board.President))
-                except.Add(Game.Board.LastPresident);
-            if (Game.Board.LastChancellor is not null && Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
-                except.Add(Game.Board.LastChancellor);
+            var except = Game.Players.Where(player => !player.IsAlive || player == Game.Board.President || player == Game.Board.LastChancellor || player == Game.Board.LastPresident).ToList();
+            if (Game.Board.LastPresident is not null && Game.Players.Count <= 5 && !except.Contains(Game.Board.Chancellor))
+                except.Remove(Game.Board.LastPresident);
             await Game.SendChoiceAsync(Game.Board.President, except);
             Game.State = new ChancellorElectedState(Game);
         }
@@ -117,12 +117,19 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            Console.WriteLine($"[{DateTime.Now}] VotingState result is {Game.LastVoteResult}");
+            Console.WriteLine($"[{DateTime.Now}] VotingState result is {Game.LastVoteResult}, EllectionCounter - {Game.Board.ElectionCounter.Cur}");
             Game.SendToChatAsync($"Результаты голосования {Game.LastVoteResult}");
             switch (Game.LastVoteResult)
             {
                 case Vote.Ya:
                     Game.Board.ElectionCounter.Clear(); // move to law confirmed
+                    if (Game.Board.FascistLawsCounter.Cur > 2 && Game.Board.Chancellor.Person is Person.Hitler)
+                    {
+                        Game.GameStatus = GameStatus.FascistWin;
+                        Game.State = new EndGameState(Game);
+                        await Game.State.Step();
+                        return;
+                    }
                     Game.State = new DrawingCardsState(Game);
                     break;
                 case Vote.Nein:
@@ -175,7 +182,6 @@ namespace TelegramBot
 
         public override async Task Step()
         {
-            Console.WriteLine($"[{DateTime.Now}] ChaosState");
             await Game.SendPresidentDiscardLawAsync();
             if (Game.Board.FascistLawsCounter.Cur >= 5)
                 Game.State = new ChancellorVetoOfferState(Game);
@@ -223,7 +229,7 @@ namespace TelegramBot
                 case Vote.Ya:
                     Game.LastVoteResult = Vote.Undef;
                     await Game.SendVetoRequestAsync(Game.Board.President);
-                    Game.State = new PresidentVetoOfferState(Game);
+                    Game.State = new VetoState(Game);
                     break;
                 case Vote.Nein:
                     Game.LastVoteResult = Vote.Undef;
@@ -275,12 +281,30 @@ namespace TelegramBot
             {
                 case Law.Fascist:
                     Game.Board.FascistLawsCounter.Inc();
-                    // Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
+                    var fascistAbility = Game.Strategy.GetFascistAbility(Game.Board.FascistLawsCounter);
+                    Game.State = new EndGameState(Game);//
+                    // await fascistAbility.Execute(Game);
                     break;
                 case Law.Liberal:
                     Game.Board.LiberalLawsCounter.Inc();
+                    var liberalAbility = Game.Strategy.GetLiberalAbility(Game.Board.LiberalLawsCounter);
+                    Game.State = new EndGameState(Game);//
+                    // await liberalAbility.Execute(Game);
                     break;
             }
+            Console.WriteLine($"[{DateTime.Now}] Facsist counter - {Game.Board.FascistLawsCounter.Cur} | Liberal counter - {Game.Board.LiberalLawsCounter.Cur}");
+            Game.State = new PresidentElectionState(Game);
+        }
+    }
+    
+    class EndGameState : State
+    {
+        public EndGameState(Game game) : base(game)
+        { }
+
+        public override async Task Step()
+        {
+            Console.WriteLine($"[{DateTime.Now}] Endgame, game status is {Game.GameStatus}");
         }
     }
 }

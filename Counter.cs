@@ -5,7 +5,8 @@ namespace TelegramBot
         protected uint _cur = 0;
         public uint Cur => _cur;
         public abstract bool Inc();
-        
+        public void _setCur(uint c)
+            => _cur = c;
     }
     
     public class ElectionCounter : Counter

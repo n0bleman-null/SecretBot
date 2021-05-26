@@ -89,7 +89,7 @@ namespace TelegramBot
                     break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
-                    await Games.Instance[chatId].State.Step();
+                    await Games.Instance[chatId].State?.Step();
                     break;
                 case CallbackType.DiscardLaw:
                     Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer));

@@ -28,11 +28,11 @@ namespace TelegramBot
 
         private static bool HitlerVision { get; } = true;
         
-        private static readonly IAbility[] FascistAbilities = new[]
+        private static readonly IAbility[] FascistAbilities = new IAbility[]
         {
-            new Nothing(),
-            new Nothing(),
-            new Nothing(),
+            new CheckRole(),
+            new CheckRole(),
+            new CheckRole(),
             new Nothing(),
             new Nothing(),
             new Nothing()
