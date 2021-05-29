@@ -24,9 +24,9 @@ namespace TelegramBot
         public async Task Execute(Game game)
         {
             Console.WriteLine($"[{DateTime.Now}] CheckRole executed");
+            await game.SendToChatAsync(@"Прэзідэнцкае права ""🔎 Даследаванне лаяльнасці"" даступна прэзідэнту");
             game.State = new RoleCheckAbilityState(game);
-            await game.Board.President.SendMessageAsync("Чью роль пасмареть?");
-            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList());
+            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList(),"Чыю ролю вы хочаце даведацца?");
         }
     }
     
@@ -35,7 +35,8 @@ namespace TelegramBot
         public async Task Execute(Game game)
         {
             Console.WriteLine($"[{DateTime.Now}] ShowLaws executed");
-            await game.Board.President.SendMessageAsync($"Next laws {string.Join(" ", game.Board.Deck.ShowLaws())}");
+            await game.SendToChatAsync($"Прэзідэнцкае права \"🔮 Прагляд законаў\" даступна прэзідэнту");
+            await game.Board.President.SendMessageAsync($"Наступныя законы: {string.Join(" - ", game.Board.Deck.ShowLaws().Select(l => l switch {Law.Fascist => "фашысцкі", Law.Liberal => "ліберальны"}))}");
             game.State = new PresidentElectionState(game);
             await game.State.Step();
         }
@@ -49,8 +50,8 @@ namespace TelegramBot
             game.EarlyElection = true;
             game.EarlyElectedPresident = game.Board.President;
             game.State = new EarlyElectionState(game);
-            await game.Board.President.SendMessageAsync("Кого выбрать президентом?");
-            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList());
+            await game.SendToChatAsync($"Прэзідэнцкае права \"👔 Пазачарговыя выбары\" даступна прэзідэнту");
+            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList(),"Каго абраць прэзідэнтам на пазачарговых выбарах?");
         }
     }
     
@@ -60,15 +61,16 @@ namespace TelegramBot
         {
             Console.WriteLine($"[{DateTime.Now}] Kill executed");
             game.State = new KillAbilityState(game);
-            await game.Board.President.SendMessageAsync("Кого убить?");
-            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList());
+            await game.SendToChatAsync($"Прэзідэнцкае права \"🗡 Знішчэнне\" даступна прэзідэнту");
+            await game.SendChoiceAsync(game.Board.President, game.Players.Where(p => !p.IsAlive || p == game.Board.President).ToList(),"Каго забіць?");
         }
     }
     public class LiberalWin : IAbility
     {
         public async Task Execute(Game game)
         {
-            Console.WriteLine($"[{DateTime.Now}] LiberalWins");   
+            Console.WriteLine($"[{DateTime.Now}] LiberalWins");  
+            await game.SendToChatAsync($"Лібералы перамаглі");
             game.GameStatus = GameStatus.LiberalWin;
             game.State = new EndGameState(game);
             await game.State.Step();
@@ -80,6 +82,7 @@ namespace TelegramBot
         public async Task Execute(Game game)
         {
             Console.WriteLine($"[{DateTime.Now}] FascistWin");   
+            await game.SendToChatAsync($"Фашысты перамаглі");
             game.GameStatus = GameStatus.FascistWin;
             game.State = new EndGameState(game);
             await game.State.Step();

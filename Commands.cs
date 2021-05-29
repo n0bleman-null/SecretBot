@@ -23,7 +23,6 @@ namespace TelegramBot
                 "/leave" => LeaveGameCommandAsync(message),
                 "/begin" => BeginGameCommandAsync(message),
                 "/stop" => StopGameCommandAsync(message),
-                "/test" => TestCommandAsync(message),
                 _ => Usage(message)
             };
             await action;
@@ -34,17 +33,20 @@ namespace TelegramBot
         {
             await Bot.Instance.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Stoped"
-            ); 
+                text: "Усе гульні спыненыя"
+            );
+            if (Games.Instance.ContainsKey(message.Chat.Id))
+                Games.Instance.Remove(message.Chat.Id);
         }
 
         private static async Task BeginGameCommandAsync(Message message)
         {
-            await Bot.Instance.SendTextMessageAsync(
-                chatId: message.Chat.Id,
-                text: "Game STARTED"
-            ); 
-        
+            if (Games.Instance[message.Chat.Id].Players.Count < 5)
+            {
+                await Games.Instance[message.Chat.Id].SendToChatAsync($"Недастаткова гульцоў (неабходна мінімум 5) - зараз {Games.Instance[message.Chat.Id].Players.Count}");
+                return;
+            }
+            await Games.Instance[message.Chat.Id].SendToChatAsync("Гульня пачалася");
             await Games.Instance[message.Chat.Id].State.Step();
         }
 
@@ -52,7 +54,7 @@ namespace TelegramBot
         {
             await Bot.Instance.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Started"
+                text: @"Бот для гульні ""Сакрэтны гітлер"", каб пачаць гульню дадайце бота ў чат"
             );
         }
         
@@ -60,7 +62,7 @@ namespace TelegramBot
         {
             await Bot.Instance.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Help will appear here:"
+                text: "Дапамога: "// TODO write help
             );
         }
         
@@ -70,7 +72,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
-                    text: $"You need to create game not in private chat"
+                    text: $"Вам патрэбна ствараць гульню не ў прыватным чаце"
                 );
                 return;
             }
@@ -78,7 +80,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat.Id,
-                    text: "Game is already created"
+                    text: "Гульня ўжо створана"
                 );
             }
             else
@@ -86,7 +88,7 @@ namespace TelegramBot
                 Games.Instance.Add(message.Chat.Id, new Game(message.Chat.Id));
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat.Id,
-                    text: "Game created"
+                    text: "Гульня створана"
                 );
             }
         }
@@ -97,14 +99,14 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
-                    text: $"You need to cancel game not in private chat"
+                    text: $"Вам патрэбна адмяняць гульню не ў прыватным чаце"
                 );
                 return;
             }
             Games.Instance.Remove(message.Chat.Id);
             await Bot.Instance.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Game canceled..."
+                text: "Гульня адменена..."
             );
         }
         
@@ -114,7 +116,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                         chatId: message.Chat,
-                        text: $"You need to join game not in private chat"
+                        text: $"Вам патрэбна далучыцца да гульні не ў прыватным чаце"
                     );
                 return;
             }
@@ -122,7 +124,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
-                    text: $"You need to create game before join"
+                    text: $"Вам патрэбна стварыць гульню, перш чым далучыцца"
                 );
                 return;
             }
@@ -132,8 +134,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: player.Id,
-                    text: $"You are already playing in chat {Games.Instance[message.Chat.Id].Players.Count}"
-                    // text: $"You are already playing in chat {message.Chat.Title}"
+                    text: $"Вы ўжо гуляеце ў чаце {message.Chat.Title}"
                 );
             }
             else
@@ -142,15 +143,14 @@ namespace TelegramBot
                 {
                     await Bot.Instance.SendTextMessageAsync(
                         chatId: message.Chat.Id,
-                        text: $"Wait for game end before join"
+                        text: $"Дачакайцеся заканчэння гульні, перш чым далучыцца"
                     );
                     return;
                 }
                 Games.Instance[message.Chat.Id].Subscribe(player);
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: player.Id,
-                    text: $"Joined to game in chat {Games.Instance[message.Chat.Id].Players.Count}"
-                    // text: $"Joined to game in chat {message.Chat.Title}"
+                    text: $"Далучыўся да гульні ў чаце {message.Chat.Title}"
                 );
             }
         }
@@ -161,7 +161,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
-                    text: $"You need to leave game not in private chat"
+                    text: $"Вам трэба пакінуць гульню не ў прыватным чаце"
                 );
                 return;
             }
@@ -169,7 +169,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
-                    text: $"Game is not created"
+                    text: $"Гульня не створана"
                 );
                 return;
             }
@@ -177,7 +177,7 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat.Id,
-                    text: $"Game is already started: can't leave"
+                    text: $"Гульня ўжо пачата: нельга сыходзіць"
                 );
                 return;
             }
@@ -185,15 +185,9 @@ namespace TelegramBot
             Games.Instance[message.Chat.Id].Unsubscribe(player);
             await Bot.Instance.SendTextMessageAsync(
                 chatId: player.Id,
-                text: $"Exit game in chat {message.Chat.Title}"
+                text: $"Выхад з гульні ў чаце {message.Chat.Title}"
             );
         }
-        
-        static async Task TestCommandAsync(Message message)
-        {
-            await Games.Instance[message.Chat.Id].SendChoiceAsync(Games.Instance[message.Chat.Id].Players.First());
-        }
-
 
         static async Task Usage(Message message)
         {
@@ -201,7 +195,7 @@ namespace TelegramBot
             if (message.Chat.Type == ChatType.Private)
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat.Id,
-                    text: "type /help bitch"
+                    text: "Каб атрымаць дапамогу, напішыце /help"
                 );
         }
     }

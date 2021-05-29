@@ -10,7 +10,7 @@ namespace TelegramBot
         public abstract List<Person> GetRoles(int players);
         public abstract IAbility GetFascistAbility(Counter counter);
         public abstract IAbility GetLiberalAbility(Counter counter);
-        public bool HitlerVision { get; }
+        public abstract bool HitlerVision();
     }
 
     public class LowStrategy : Strategy // for 5-6 players
@@ -26,19 +26,19 @@ namespace TelegramBot
         public override IAbility GetLiberalAbility(Counter counter)
             => LiberalAbilities[counter.Cur - 1];
 
-        private static bool HitlerVision { get; } = true;
+        public override bool HitlerVision() => false;
         
         private static readonly IAbility[] FascistAbilities = new IAbility[]
         {
+            new Kill(),
             new EarlyElections(),
-            new CheckRole(),
-            new ShowLaws(),
-            new CheckRole(),
+            new Nothing(),
+            new Nothing(),
             new Nothing(),
             new Nothing()
         };
 
-        private static readonly IAbility[] LiberalAbilities = new[]
+        private static readonly IAbility[] LiberalAbilities = new IAbility[]
         {
             new Nothing(),
             new Nothing(),

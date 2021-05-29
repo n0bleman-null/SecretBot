@@ -24,7 +24,7 @@ namespace TelegramBot
         DiscardLaw,
         ChooseLaw
     }
-    public sealed class Bot // Singleton
+    public sealed class Bot 
     {
         private static readonly Lazy<TelegramBotClient> Lazy =
             new Lazy<TelegramBotClient>(() => new TelegramBotClient(token: Configuration.BotToken));
@@ -33,7 +33,7 @@ namespace TelegramBot
         { }
     }
     
-    public sealed class Games // Singleton
+    public sealed class Games 
     {
         private static readonly Lazy<Dictionary<long, Game>> Lazy =
             new Lazy<Dictionary<long, Game>>(() => new Dictionary<long, Game>());
@@ -76,28 +76,34 @@ namespace TelegramBot
             var chatId = long.Parse(callback[0]);
             var callbackType = (CallbackType) Enum.Parse(typeof(CallbackType), callback[1]);
             var callbackAnswer = callback[2];
+            string data = default;
             switch (callbackType)
             {
                 case CallbackType.Vote:
                     Games.Instance[chatId].Players.First(
                             player => player.User.Id == callbackQuery.From.Id).VoteResult =
                             (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    data = callbackAnswer;
                     if (Games.Instance[chatId].AllVote())
                         await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.SingleVote:
                     Games.Instance[chatId].LastVoteResult = (Vote) Enum.Parse(typeof(Vote), callbackAnswer);
+                    data = callbackAnswer;
                     await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.Choice:
                     Games.Instance[chatId].CandidateForActionId = long.Parse(callbackAnswer);
+                    data = Games.Instance[chatId].Players.First(player => player.User.Id == long.Parse(callbackAnswer)).ToString();
                     await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.DiscardLaw:
+                    data = Games.Instance[chatId].DraftedLaws.ElementAt(int.Parse(callbackAnswer)).ToString();
                     Games.Instance[chatId].DraftedLaws.RemoveAt(int.Parse(callbackAnswer));
                     await Games.Instance[chatId].State.Step();
                     break;
                 case CallbackType.ChooseLaw:
+                    data = Games.Instance[chatId].DraftedLaws.ElementAt((int.Parse(callbackAnswer) + 1) % 2).ToString();
                     Games.Instance[chatId].DraftedLaws.RemoveAt((int.Parse(callbackAnswer) + 1) % 2);
                     await Games.Instance[chatId].State.Step();
                     break;
@@ -105,7 +111,7 @@ namespace TelegramBot
             await Bot.Instance.EditMessageTextAsync(
                 callbackQuery.Message.Chat.Id,
                 callbackQuery.Message.MessageId,
-                $"Спасибо, вы проголосовали за {callbackAnswer}",
+                $"Дзякуй, вы прагаласавалі за {data}",
                 replyMarkup: null);
             // Console.WriteLine(callbackQuery.Data);
         }

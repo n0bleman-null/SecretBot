@@ -74,7 +74,7 @@ namespace TelegramBot
             Players.ForEach(player => player.VoteResult = Vote.Undef);
             return true;
         }
-        public async Task SendVoteAsync()
+        public async Task SendVoteAsync(string txt)
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(new InlineKeyboardButton[]
                 {
@@ -86,11 +86,11 @@ namespace TelegramBot
             {
                 await Bot.Instance.SendTextMessageAsync(
                 chatId: player.User.Id,
-                text: "Голосуйте",
+                text: txt,
                 replyMarkup: replyKeyboardMarkup);
             }
         }
-        public async Task SendChoiceAsync(Player voting, List<Player> except = null)
+        public async Task SendChoiceAsync(Player voting, List<Player> except = null, string txt = "Выберите")
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(
                 Players.Except(except ?? Enumerable.Empty<Player>()).Select(player
@@ -100,11 +100,11 @@ namespace TelegramBot
             );
             var mes = await Bot.Instance.SendTextMessageAsync(
                 chatId: voting.User.Id,
-                text: "Выберите",
+                text: txt,
                 replyMarkup: replyKeyboardMarkup);
             
         }
-        public async Task SendPresidentDiscardLawAsync()
+        public async Task SendPresidentDiscardLawAsync(string txt)
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(DraftedLaws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
                 law.ToString(),
@@ -112,10 +112,10 @@ namespace TelegramBot
                 )));
             await Bot.Instance.SendTextMessageAsync(
                 chatId: Board.President.User.Id,
-                text: "Выберите закон, который хотите скинуть",
+                text: txt,
                 replyMarkup: replyKeyboardMarkup);
         }
-        public async Task SendChancellorChooseLawAsync()
+        public async Task SendChancellorChooseLawAsync(string txt)
         {
             var replyKeyboardMarkup = new InlineKeyboardMarkup(DraftedLaws.Select((law,index) => InlineKeyboardButton.WithCallbackData(
                 law.ToString(),
@@ -123,7 +123,7 @@ namespace TelegramBot
             )));
             await Bot.Instance.SendTextMessageAsync(
                 chatId: Board.Chancellor.User.Id,
-                text: "Выберите закон, который хотите принять",
+                text: txt,
                 replyMarkup: replyKeyboardMarkup);
         }
 
@@ -137,7 +137,7 @@ namespace TelegramBot
             );
             await Bot.Instance.SendTextMessageAsync(
                     chatId: player.User.Id,
-                    text: "Воспользоваться правом вето?",
+                    text: "Хотите воспользоваться правом вето?",
                     replyMarkup: replyKeyboardMarkup);
         }
 

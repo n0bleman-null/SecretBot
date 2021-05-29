@@ -54,5 +54,8 @@ namespace TelegramBot
         {
             return User.Id.GetHashCode();
         }
+
+        public override string ToString()
+            => string.Join(" ", User.FirstName, User.LastName);
     }
 }

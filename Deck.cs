@@ -45,7 +45,7 @@ namespace TelegramBot
         public List<Law> ShowLaws() // 3 Laws
             => Laws.Take(3).ToList();
 
-        public List<Law> GetLaw()
+        public List<Law> GetLaw() // 1 Law
         {
             var l = Laws.Take(1);
             Discarded.AddRange(l);
