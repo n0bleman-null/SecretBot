@@ -13,7 +13,7 @@ namespace SecretHitlerBot
         }
 
         public int Id { get; set; }
-        public long Chatid { get; set; }
+        public long ChatId { get; set; }
 
         public virtual ICollection<GameDB> Games { get; set; }
     }

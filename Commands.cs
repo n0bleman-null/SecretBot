@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using SecretHitlerBot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 
@@ -46,6 +47,11 @@ namespace TelegramBot
                 await Games.Instance[message.Chat.Id].SendToChatAsync($"Недастаткова гульцоў (неабходна мінімум 5) - зараз {Games.Instance[message.Chat.Id].Players.Count}");
                 return;
             }
+            if (Games.Instance[message.Chat.Id].Players.Count > 10)
+            {
+                await Games.Instance[message.Chat.Id].SendToChatAsync($"Занадта гульцоў (максiмум 10) ");
+                return;
+            }
             await Games.Instance[message.Chat.Id].SendToChatAsync("Гульня пачалася");
             await Games.Instance[message.Chat.Id].State.Step();
         }
@@ -56,6 +62,12 @@ namespace TelegramBot
                 chatId: message.Chat.Id,
                 text: @"Бот для гульні ""Сакрэтны гітлер"", каб пачаць гульню дадайце бота ў чат"
             );
+            using (var db = new SechitContext())
+            {
+                if (db.Players.FirstOrDefault(p => p.PlayerId == message.From.Id) is null)
+                    db.Players.Add(new PlayerDB {PlayerId = message.From.Id});
+                db.SaveChanges();
+            }
         }
         
         static async Task HelpCommandAsync(Message message)
@@ -68,6 +80,13 @@ namespace TelegramBot
         
         static async Task CreateGameCommandAsync(Message message)
         {
+            using (var db = new SechitContext())
+            {
+                if (db.Chats.FirstOrDefault(c => c.ChatId == message.Chat.Id) is null)
+                    db.Chats.Add(new ChatDB {ChatId = message.Chat.Id});
+                db.SaveChanges();
+            }
+
             if (message.Chat.Type == ChatType.Private)
             {
                 await Bot.Instance.SendTextMessageAsync(

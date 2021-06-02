@@ -6,12 +6,12 @@ using System.Collections;
 
 namespace SecretHitlerBot
 {
-    public partial class PlayergameDB
+    public partial class PlayergameDb
     {
         public int Id { get; set; }
-        public int Playerid { get; set; }
-        public int Gameid { get; set; }
-        public BitArray Role { get; set; }
+        public int PlayerId { get; set; }
+        public int GameId { get; set; }
+        public bool Role { get; set; }
 
         public virtual GameDB Game { get; set; }
         public virtual PlayerDB Player { get; set; }

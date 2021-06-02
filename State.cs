@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using SecretHitlerBot;
 using Telegram.Bot.Types.ReplyMarkups;
 namespace TelegramBot
 {
@@ -22,6 +23,16 @@ namespace TelegramBot
 
         public override async Task Step() // TODO transform all Game.Player.Where(p => p.IsAlive) to Game.Alive ...
         {
+            Game.Strategy = Game.Players.Count switch
+            {
+                5 => new LowStrategy(),
+                6 => new LowStrategy(),
+                7 => new MidStrategy(),
+                8 => new MidStrategy(),
+                9 => new HardStrategy(),
+                10 => new HardStrategy(),
+                _ => throw new Exception("Error in players.count")
+            };
             foreach (var (player,person) in Enumerable.Zip(Game.Players, Game.Strategy.GetRoles(Game.Players.Count)))
             {
                 player.Person = person;
@@ -435,8 +446,36 @@ namespace TelegramBot
         public override async Task Step()
         {
             Console.WriteLine($"[{DateTime.Now}] Endgame, game status is {Game.GameStatus}");
-            // TODO delete game from dictionary
-            // TODO test kill ability with many players
+            
+            using (var db = new SechitContext())
+            {
+                var entry = db.Games.Add(new GameDB
+                {
+                    ChatId = db.Chats.Single(c => c.ChatId == Game.ChatId).Id,
+                    Winner = Game.GameStatus switch
+                    {
+                        GameStatus.LiberalWin => false, 
+                        GameStatus.FascistWin => true
+                    }
+                });
+                db.SaveChanges();
+                foreach (var player in Game.Players)
+                {
+                    db.Playergames.Add(new PlayergameDb 
+                    {
+                        PlayerId = db.Players.Single(p => p.PlayerId == player.User.Id).Id,
+                        GameId = entry.Entity.Id, 
+                        Role = player.Role switch
+                        {
+                            Role.Liberal => false,
+                            Role.Fascist => true
+                        }
+                    });
+                }
+                db.SaveChanges();
+            }
+            
+            Games.Instance.Remove(Game.ChatId);
         }
     }
 }

@@ -23,8 +23,6 @@ namespace TelegramBot
         {
             _chatId = chat;
             State = new PreparingState(this);
-            //
-            Strategy = new LowStrategy();
         }
 
         public List<Player> Players { get; set; } = new List<Player>();
@@ -34,7 +32,7 @@ namespace TelegramBot
         public GameStatus GameStatus { get; set; }= GameStatus.Preparing;
         
         public Board Board { get; } = new Board();
-        public Strategy Strategy { get; private set; }
+        public Strategy Strategy { get; set; }
         // for callbacks
         public long? CandidateForActionId { get; set; } = null;
         public Vote LastVoteResult { get; set; } = Vote.Undef;

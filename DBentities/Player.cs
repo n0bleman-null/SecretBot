@@ -9,12 +9,12 @@ namespace SecretHitlerBot
     {
         public PlayerDB()
         {
-            Playergames = new HashSet<PlayergameDB>();
+            Playergames = new HashSet<PlayergameDb>();
         }
 
         public int Id { get; set; }
-        public long Playerid { get; set; }
+        public long PlayerId { get; set; }
 
-        public virtual ICollection<PlayergameDB> Playergames { get; set; }
+        public virtual ICollection<PlayergameDb> Playergames { get; set; }
     }
 }

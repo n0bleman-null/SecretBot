@@ -6,13 +6,13 @@ using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace SecretHitlerBot
 {
-    public partial class sechitContext : DbContext
+    public partial class SechitContext : DbContext
     {
-        public sechitContext()
+        public SechitContext()
         {
         }
 
-        public sechitContext(DbContextOptions<sechitContext> options)
+        public SechitContext(DbContextOptions<SechitContext> options)
             : base(options)
         {
         }
@@ -20,13 +20,13 @@ namespace SecretHitlerBot
         public virtual DbSet<ChatDB> Chats { get; set; }
         public virtual DbSet<GameDB> Games { get; set; }
         public virtual DbSet<PlayerDB> Players { get; set; }
-        public virtual DbSet<PlayergameDB> Playergames { get; set; }
+        public virtual DbSet<PlayergameDb> Playergames { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
             if (!optionsBuilder.IsConfigured)
             {
-#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
+                // lazy proxies?
                 optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=sechit;Username=tim;Password=pass");
             }
         }
@@ -39,14 +39,14 @@ namespace SecretHitlerBot
             {
                 entity.ToTable("chat");
 
-                entity.HasIndex(e => e.Chatid, "chat_chatid_key")
+                entity.HasIndex(e => e.ChatId, "chat_chatid_key")
                     .IsUnique();
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .UseIdentityAlwaysColumn();
 
-                entity.Property(e => e.Chatid).HasColumnName("chatid");
+                entity.Property(e => e.ChatId).HasColumnName("chatid");
             });
 
             modelBuilder.Entity<GameDB>(entity =>
@@ -57,16 +57,16 @@ namespace SecretHitlerBot
                     .HasColumnName("id")
                     .UseIdentityAlwaysColumn();
 
-                entity.Property(e => e.Chatid).HasColumnName("chatid");
+                entity.Property(e => e.ChatId).HasColumnName("chatid");
 
                 entity.Property(e => e.Winner)
                     .IsRequired()
-                    .HasColumnType("bit(1)")
+                    .HasColumnType("boolean")
                     .HasColumnName("winner");
 
                 entity.HasOne(d => d.Chat)
                     .WithMany(p => p.Games)
-                    .HasForeignKey(d => d.Chatid)
+                    .HasForeignKey(d => d.ChatId)
                     .HasConstraintName("game_chatid_fkey");
             });
 
@@ -74,44 +74,44 @@ namespace SecretHitlerBot
             {
                 entity.ToTable("player");
 
-                entity.HasIndex(e => e.Playerid, "player_playerid_key")
+                entity.HasIndex(e => e.PlayerId, "player_playerid_key")
                     .IsUnique();
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .UseIdentityAlwaysColumn();
 
-                entity.Property(e => e.Playerid).HasColumnName("playerid");
+                entity.Property(e => e.PlayerId).HasColumnName("playerid");
             });
 
-            modelBuilder.Entity<PlayergameDB>(entity =>
+            modelBuilder.Entity<PlayergameDb>(entity =>
             {
                 entity.ToTable("playergame");
 
-                entity.HasIndex(e => new { e.Playerid, e.Gameid }, "oneplayerpergame")
+                entity.HasIndex(e => new {Playerid = e.PlayerId, Gameid = e.GameId }, "oneplayerpergame")
                     .IsUnique();
 
                 entity.Property(e => e.Id)
                     .HasColumnName("id")
                     .UseIdentityAlwaysColumn();
 
-                entity.Property(e => e.Gameid).HasColumnName("gameid");
+                entity.Property(e => e.GameId).HasColumnName("gameid");
 
-                entity.Property(e => e.Playerid).HasColumnName("playerid");
+                entity.Property(e => e.PlayerId).HasColumnName("playerid");
 
                 entity.Property(e => e.Role)
                     .IsRequired()
-                    .HasColumnType("bit(1)")
+                    .HasColumnType("boolean")
                     .HasColumnName("role");
 
                 entity.HasOne(d => d.Game)
                     .WithMany(p => p.Playergames)
-                    .HasForeignKey(d => d.Gameid)
+                    .HasForeignKey(d => d.GameId)
                     .HasConstraintName("playergame_gameid_fkey");
 
                 entity.HasOne(d => d.Player)
                     .WithMany(p => p.Playergames)
-                    .HasForeignKey(d => d.Playerid)
+                    .HasForeignKey(d => d.PlayerId)
                     .HasConstraintName("playergame_playerid_fkey");
             });
 

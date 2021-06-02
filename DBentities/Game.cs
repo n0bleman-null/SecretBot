@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections;
+using System.ComponentModel.DataAnnotations;
 
 #nullable disable
 
@@ -10,14 +11,15 @@ namespace SecretHitlerBot
     {
         public GameDB()
         {
-            Playergames = new HashSet<PlayergameDB>();
+            Playergames = new HashSet<PlayergameDb>();
         }
 
+        [Key]
         public int Id { get; set; }
-        public int Chatid { get; set; }
-        public BitArray Winner { get; set; }
+        public int ChatId { get; set; }
+        public bool Winner { get; set; }
 
         public virtual ChatDB Chat { get; set; }
-        public virtual ICollection<PlayergameDB> Playergames { get; set; }
+        public virtual ICollection<PlayergameDb> Playergames { get; set; }
     }
 }
