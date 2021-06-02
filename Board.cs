@@ -15,6 +15,5 @@ namespace TelegramBot
         public LawsCounter FascistLawsCounter { get; set; } = new LawsCounter();
 
         public Deck Deck { get; set; } = new Deck();
-        // TODO realize DECK
     }
 }
