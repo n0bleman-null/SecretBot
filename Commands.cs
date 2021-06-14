@@ -24,12 +24,33 @@ namespace TelegramBot
                 "/leave" => LeaveGameCommandAsync(message),
                 "/begin" => BeginGameCommandAsync(message),
                 "/stop" => StopGameCommandAsync(message),
+                "/stats" => StatsCommandAsync(message),
                 _ => Usage(message)
             };
             await action;
         }
 
-        // TODO make implementations
+        private static async Task StatsCommandAsync(Message message)
+        {
+            if (message.Chat.Type != ChatType.Private)
+            {
+                await Bot.Instance.SendTextMessageAsync(
+                    chatId: message.Chat,
+                    text: $"Вам патрэбна атрымлiваць статыстыку ў прыватным чаце"
+                );
+                return;
+            }
+
+            using (var db = new SechitContext())
+            {
+                await Bot.Instance.SendTextMessageAsync(
+                    message.Chat.Id,
+                    $"Статыстыка гульца:\n" +
+                    $"Гульняў згуляна: {db.Playergames.Count(p => p.Player == db.Players.Single(p => p.PlayerId == message.From.Id))}\n" +
+                    $"Гульняў выйграна: {(from playergame in db.Playergames join game in db.Games on playergame.GameId equals game.Id join player in db.Players on playergame.PlayerId equals player.Id select new {Игрок = player.PlayerId,                           Роль = playergame.Role, Итог = game.Winner}).Count(p => p.Игрок == message.From.Id && p.Роль == p.Итог)}");
+            }
+        }
+        
         private static async Task StopGameCommandAsync(Message message)
         {
             await Bot.Instance.SendTextMessageAsync(
@@ -74,7 +95,7 @@ namespace TelegramBot
         {
             await Bot.Instance.SendTextMessageAsync(
                 chatId: message.Chat.Id,
-                text: "Дапамога: "// TODO write help
+                text: @"Афіцыйныя правілы гульні: http://www.secrethitler.com/assets/Secret_Hitler_Rules.pdf" // TODO write help
             );
         }
         
