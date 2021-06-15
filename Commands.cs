@@ -19,7 +19,7 @@ namespace TelegramBot
                 "/start" => StartCommandAsync(message),
                 "/help" => HelpCommandAsync(message),
                 "/game" => CreateGameCommandAsync(message),
-                "/cancel" => CancelGameCommandAsync(message),
+                // "/cancel" => CancelGameCommandAsync(message),
                 "/join" => JoinGameCommandAsync(message),  
                 "/leave" => LeaveGameCommandAsync(message),
                 "/begin" => BeginGameCommandAsync(message),
@@ -63,18 +63,23 @@ namespace TelegramBot
 
         private static async Task BeginGameCommandAsync(Message message)
         {
-            if (Games.Instance[message.Chat.Id].Players.Count < 5)
+            if (Games.Instance.ContainsKey(message.Chat.Id)) 
             {
-                await Games.Instance[message.Chat.Id].SendToChatAsync($"Недастаткова гульцоў (неабходна мінімум 5) - зараз {Games.Instance[message.Chat.Id].Players.Count}");
-                return;
+                if (Games.Instance[message.Chat.Id].Players.Count < 5) 
+                {
+                    await Games.Instance[message.Chat.Id].SendToChatAsync(
+                        $"Недастаткова гульцоў (неабходна мінімум 5) - зараз {Games.Instance[message.Chat.Id].Players.Count}");
+                }
+                if (Games.Instance[message.Chat.Id].Players.Count > 9)
+                {
+                    await Games.Instance[message.Chat.Id].SendToChatAsync($"Занадта гульцоў (максiмум 10) ");
+                }
+                if (Games.Instance[message.Chat.Id].Players.Count > 4 && Games.Instance[message.Chat.Id].Players.Count < 11)
+                {
+                    await Games.Instance[message.Chat.Id].SendToChatAsync("Гульня пачалася");
+                    await Games.Instance[message.Chat.Id].State.Step();
+                }
             }
-            if (Games.Instance[message.Chat.Id].Players.Count > 10)
-            {
-                await Games.Instance[message.Chat.Id].SendToChatAsync($"Занадта гульцоў (максiмум 10) ");
-                return;
-            }
-            await Games.Instance[message.Chat.Id].SendToChatAsync("Гульня пачалася");
-            await Games.Instance[message.Chat.Id].State.Step();
         }
 
         static async Task StartCommandAsync(Message message)
@@ -149,49 +154,67 @@ namespace TelegramBot
                 text: "Гульня адменена..."
             );
         }
-        
+
         static async Task JoinGameCommandAsync(Message message)
         {
             if (message.Chat.Type == ChatType.Private)
             {
                 await Bot.Instance.SendTextMessageAsync(
-                        chatId: message.Chat,
-                        text: $"Вам патрэбна далучыцца да гульні не ў прыватным чаце"
-                    );
-                return;
+                    chatId: message.Chat,
+                    text: $"Вам патрэбна далучыцца да гульні не ў прыватным чаце"
+                );
             }
-            if (!Games.Instance.ContainsKey(message.Chat.Id))
+            else if (!Games.Instance.ContainsKey(message.Chat.Id))
             {
                 await Bot.Instance.SendTextMessageAsync(
                     chatId: message.Chat,
                     text: $"Вам патрэбна стварыць гульню, перш чым далучыцца"
                 );
-                return;
-            }
-           
-            var player = message.From;
-            if (Games.Instance[message.Chat.Id].IsSubscribed(player))
-            {
-                await Bot.Instance.SendTextMessageAsync(
-                    chatId: player.Id,
-                    text: $"Вы ўжо гуляеце ў чаце {message.Chat.Title}"
-                );
             }
             else
             {
+                var player = message.From;
+                if (Games.Instance[message.Chat.Id].IsSubscribed(player))
+                {
+                    await Bot.Instance.SendTextMessageAsync(
+                        chatId: player.Id,
+                        text: $"Вы ўжо гуляеце ў чаце {message.Chat.Title}"
+                    );
+                }
+                else
+
                 if (Games.Instance[message.Chat.Id].IsStarted)
                 {
                     await Bot.Instance.SendTextMessageAsync(
                         chatId: message.Chat.Id,
                         text: $"Дачакайцеся заканчэння гульні, перш чым далучыцца"
                     );
-                    return;
                 }
-                Games.Instance[message.Chat.Id].Subscribe(player);
-                await Bot.Instance.SendTextMessageAsync(
-                    chatId: player.Id,
-                    text: $"Далучыўся да гульні ў чаце {message.Chat.Title}"
-                );
+                else
+                {
+                    if (Games.Instance[message.Chat.Id].Players.Count > 9)
+                    {
+                        await Bot.Instance.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            text: $"Шмат гульцоў, вы не далучаны"
+                        );
+
+                    }
+                    else
+                    {
+                        Games.Instance[message.Chat.Id].Subscribe(player);
+                        await Bot.Instance.SendTextMessageAsync(
+                            chatId: message.Chat.Id,
+                            text: $"Зараз {Games.Instance[message.Chat.Id].Players.Count} гульцоў"
+                        );
+                        await Bot.Instance.SendTextMessageAsync(
+                            chatId: player.Id,
+                            text: $"Далучыўся да гульні ў чаце {message.Chat.Title}"
+                        );
+
+                    }
+
+                }
             }
         }
 

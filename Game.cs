@@ -64,7 +64,7 @@ namespace TelegramBot
         public bool AllVote()
         {
             var alive = Players.Where(player => player.IsAlive);
-            if (alive.Any(player => player.VoteResult == Vote.Undef))
+            if (alive.Any(player => player.VoteResult is Vote.Undef))
                 return false;
             LastVoteResult = alive.Count(player => player.VoteResult == Vote.Ya) > Players.Count / 2
                 ? Vote.Ya
